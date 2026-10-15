@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useDemo } from './context/DemoContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -7,6 +7,14 @@ import Bookings from './pages/Bookings';
 import ReviewBooster from './pages/ReviewBooster';
 import OutreachKit from './pages/OutreachKit';
 import Prospects from './pages/Prospects';
+import Login from './pages/Login';
+
+function OwnerOnly({ children }) {
+  const { owner } = useDemo();
+  const location = useLocation();
+  if (!owner) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  return children;
+}
 
 export default function App() {
   const { loading, error, state } = useDemo();
@@ -38,13 +46,28 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="login" element={<Login />} />
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="inbox" element={<InboxSimulator />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="reviews" element={<ReviewBooster />} />
-        <Route path="outreach" element={<OutreachKit />} />
-        <Route path="prospects" element={<Prospects />} />
+        <Route
+          path="outreach"
+          element={
+            <OwnerOnly>
+              <OutreachKit />
+            </OwnerOnly>
+          }
+        />
+        <Route
+          path="prospects"
+          element={
+            <OwnerOnly>
+              <Prospects />
+            </OwnerOnly>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

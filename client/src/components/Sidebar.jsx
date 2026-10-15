@@ -4,7 +4,7 @@ import { useDemo } from '../context/DemoContext';
 import { formatMoney } from '../api';
 import { isDue } from '../lib/prospects';
 
-const groups = [
+export const groups = [
   {
     label: 'Operations',
     links: [
@@ -19,6 +19,7 @@ const groups = [
   },
   {
     label: 'Your sales',
+    ownerOnly: true,
     links: [
       { to: '/prospects', label: 'Pipeline', icon: KanbanSquare, badge: 'due' },
       { to: '/outreach', label: 'Pitch kit', icon: Megaphone }
@@ -27,7 +28,7 @@ const groups = [
 ];
 
 export default function Sidebar() {
-  const { state, prospects } = useDemo();
+  const { state, prospects, owner } = useDemo();
   const unread = state.leads.filter((l) => l.unread).length;
   const due = prospects.filter(isDue).length;
 
@@ -42,7 +43,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        {groups.map((g) => (
+        {groups.filter((g) => owner || !g.ownerOnly).map((g) => (
           <div key={g.label} className="mb-5">
             <p className="mb-1.5 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">{g.label}</p>
             <div className="space-y-0.5">
@@ -82,15 +83,25 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="m-3 rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Your offer</p>
-        <p className="mt-1 font-display text-[1.6rem] leading-none">
-          $79<span className="font-sans text-[12px] text-white/45"> /mo</span>
-        </p>
-        <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-          Podium charges {formatMoney(state.metrics.competitorMonthly)}. Client keeps ~{formatMoney(state.metrics.monthlySavingsVsPodium * 12)}/yr.
-        </p>
-      </div>
+      {owner ? (
+        <div className="m-3 rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Your offer</p>
+          <p className="mt-1 font-display text-[1.6rem] leading-none">
+            $79<span className="font-sans text-[12px] text-white/45"> /mo</span>
+          </p>
+          <p className="mt-1.5 text-[11px] leading-snug text-white/45">
+            Podium charges {formatMoney(state.metrics.competitorMonthly)}. Client keeps ~{formatMoney(state.metrics.monthlySavingsVsPodium * 12)}/yr.
+          </p>
+        </div>
+      ) : (
+        <div className="m-3 rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Live in 48 hours</p>
+          <p className="mt-1.5 text-[13px] font-medium leading-snug text-white">Want this running for {state.business.name}?</p>
+          <p className="mt-1.5 text-[11px] leading-snug text-white/50">
+            From $79/mo — about {formatMoney(state.metrics.monthlySavingsVsPodium * 12)}/yr less than Podium. Reply to my message and I’ll set it up.
+          </p>
+        </div>
+      )}
     </aside>
   );
 }

@@ -5,5 +5,6 @@ dist/
 server/data/db.json
 server/data/prospects.json
 .env
+!.env.example
 .vscode/
 client/dist/

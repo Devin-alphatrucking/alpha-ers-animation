@@ -1,8 +1,48 @@
+const DEMO_KEY = 'pl_demo_id';
+const TOKEN_KEY = 'pl_owner_token';
+
+function demoId() {
+  let id = window.localStorage.getItem(DEMO_KEY);
+  if (!id || !/^[A-Za-z0-9_-]{8,64}$/.test(id)) {
+    id = (window.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`).replace(/[^A-Za-z0-9_-]/g, '');
+    window.localStorage.setItem(DEMO_KEY, id);
+  }
+  return id;
+}
+
+export const ownerToken = {
+  get: () => window.localStorage.getItem(TOKEN_KEY) || '',
+  set: (t) => (t ? window.localStorage.setItem(TOKEN_KEY, t) : window.localStorage.removeItem(TOKEN_KEY))
+};
+
+let onUnauthorized = null;
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn;
+}
+
 async function request(path, options = {}) {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  });
+  const token = ownerToken.get();
+  const { headers, ...rest } = options;
+  let res;
+  try {
+    res = await fetch(path, {
+      ...rest,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Id': demoId(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers || {})
+      }
+    });
+  } catch {
+    const err = new Error('Can’t reach the server. Check your connection and try again.');
+    err.status = 0;
+    throw err;
+  }
+  if (res.status === 401 && token && path !== '/api/auth/login') {
+    ownerToken.set('');
+    onUnauthorized?.();
+  }
   if (!res.ok) {
     let data = null;
     try {
@@ -21,6 +61,8 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request('/api/health'),
+  me: () => request('/api/auth/me'),
+  login: (password) => request('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
   niches: () => request('/api/niches'),
   state: () => request('/api/state'),
   reset: (nicheId) =>

@@ -1,7 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const backend = require('./prospectsBackend');
 
-const FILE = path.join(__dirname, 'prospects.json');
 const DAY = 86400000;
 
 const stageLabels = {
@@ -177,30 +175,37 @@ function seed() {
   });
 }
 
-function load() {
-  if (!fs.existsSync(FILE)) return save(seed());
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    return Array.isArray(data) ? data : save(seed());
-  } catch {
-    return save(seed());
+let seeding = null;
+
+async function load() {
+  if (!(await backend.isSeeded())) {
+    if (!seeding) {
+      seeding = (async () => {
+        await backend.insertMany(seed());
+        await backend.markSeeded();
+      })().finally(() => {
+        seeding = null;
+      });
+    }
+    await seeding;
   }
+  return backend.all();
 }
 
-function save(list) {
-  fs.writeFileSync(FILE, JSON.stringify(list, null, 2));
-  return list;
+async function list() {
+  return (await load()).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 }
 
-function list() {
-  return load().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+async function get(id) {
+  await load();
+  return backend.get(id);
 }
 
-function findDuplicate(value, exceptId) {
+async function findDuplicate(value, exceptId, pool) {
   const email = (value.email || '').toLowerCase();
   const ig = (value.instagram || '').toLowerCase();
   const nameKey = `${(value.businessName || '').toLowerCase()}|${(value.city || '').toLowerCase()}`;
-  return load().find((p) => {
+  return (pool || (await load())).find((p) => {
     if (p.id === exceptId) return false;
     if (email && p.email && p.email.toLowerCase() === email) return true;
     if (ig && p.instagram && p.instagram.toLowerCase() === ig) return true;
@@ -208,7 +213,7 @@ function findDuplicate(value, exceptId) {
   });
 }
 
-function create(value) {
+async function create(value) {
   const now = new Date().toISOString();
   const prospect = {
     id: uid('pr'),
@@ -229,15 +234,14 @@ function create(value) {
     updatedAt: now
   };
   if (prospect.dealValue === null) prospect.dealValue = 79;
-  const all = load();
-  all.push(prospect);
-  save(all);
+  await load();
+  await backend.insertMany([prospect]);
   return prospect;
 }
 
-function createMany(values) {
+async function createMany(values) {
   const now = new Date().toISOString();
-  const all = load();
+  await load();
   const created = values.map((value) => ({
     id: uid('pr'),
     ownerName: '',
@@ -257,29 +261,25 @@ function createMany(values) {
     createdAt: now,
     updatedAt: now
   }));
-  save([...all, ...created]);
+  await backend.insertMany(created);
   return created;
 }
 
-function update(id, value) {
-  const all = load();
-  const p = all.find((x) => x.id === id);
+async function update(id, value) {
+  const p = await get(id);
   if (!p) return null;
   const now = new Date().toISOString();
   if (value.stage && value.stage !== p.stage) {
     p.activity.unshift({ id: uid('pa'), type: 'note', text: `Moved to ${stageLabels[value.stage]}`, at: now });
   }
   Object.assign(p, value, { updatedAt: now });
-  save(all);
+  await backend.put(p);
   return p;
 }
 
-function remove(id) {
-  const all = load();
-  const next = all.filter((x) => x.id !== id);
-  if (next.length === all.length) return false;
-  save(next);
-  return true;
+async function remove(id) {
+  await load();
+  return backend.remove(id);
 }
 
 const stageForType = { reply: 'replied', demo: 'demo', won: 'won', lost: 'lost' };
@@ -295,9 +295,8 @@ const defaultText = {
 };
 const order = ['new', 'contacted', 'replied', 'demo', 'won'];
 
-function addActivity(id, { type, text, advanceTo, followUpDays }) {
-  const all = load();
-  const p = all.find((x) => x.id === id);
+async function addActivity(id, { type, text, advanceTo, followUpDays }) {
+  const p = await get(id);
   if (!p) return null;
   const now = new Date();
   p.activity.unshift({ id: uid('pa'), type, text: text || defaultText[type] || 'Note', at: now.toISOString() });
@@ -317,13 +316,16 @@ function addActivity(id, { type, text, advanceTo, followUpDays }) {
     p.nextFollowUp = d.toISOString();
   }
   if (p.stage === 'won' || p.stage === 'lost') p.nextFollowUp = null;
+  p.activity = p.activity.slice(0, 200);
   p.updatedAt = now.toISOString();
-  save(all);
+  await backend.put(p);
   return p;
 }
 
-function reset() {
-  return save(seed());
+async function reset() {
+  await backend.replaceAll(seed());
+  await backend.markSeeded();
+  return list();
 }
 
-module.exports = { list, create, createMany, update, remove, addActivity, findDuplicate, reset };
+module.exports = { list, get, create, createMany, update, remove, addActivity, findDuplicate, reset, backend };

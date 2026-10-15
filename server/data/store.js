@@ -483,48 +483,109 @@ function buildSeed(nicheId, overrides = {}) {
   };
 }
 
-function load() {
-  if (!fs.existsSync(DB_PATH)) return null;
+const SESSION_TTL = 12 * 60 * 60 * 1000;
+const MAX_SESSIONS = 1000;
+const PERSIST = process.env.NODE_ENV !== 'production';
+const sessions = new Map();
+let persistTimer = null;
+
+if (PERSIST && fs.existsSync(DB_PATH)) {
   try {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    if (data && data.sessions) {
+      Object.entries(data.sessions).forEach(([sid, entry]) => sessions.set(sid, entry));
+    }
   } catch {
-    return null;
+    // Corrupt dev cache: start with fresh demos.
   }
 }
 
-function save(state) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(state, null, 2));
+function schedulePersist() {
+  if (!PERSIST) return;
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    fs.writeFile(DB_PATH, JSON.stringify({ sessions: Object.fromEntries(sessions) }), () => {});
+  }, 400);
+}
+
+function sweep() {
+  const cutoff = Date.now() - SESSION_TTL;
+  sessions.forEach((entry, sid) => {
+    if (entry.touched < cutoff) sessions.delete(sid);
+  });
+  while (sessions.size > MAX_SESSIONS) {
+    sessions.delete(sessions.keys().next().value);
+  }
+}
+setInterval(sweep, 10 * 60 * 1000).unref();
+
+function save(sid, state) {
+  sessions.delete(sid);
+  sessions.set(sid, { state, touched: Date.now() });
+  if (sessions.size > MAX_SESSIONS) sweep();
+  schedulePersist();
   return state;
 }
 
-function getState() {
-  const existing = load();
-  if (existing && existing.business) return existing;
-  return save(buildSeed('medspa'));
+function getState(sid) {
+  const entry = sessions.get(sid);
+  if (entry && entry.state && entry.state.business) {
+    entry.touched = Date.now();
+    return entry.state;
+  }
+  return save(sid, buildSeed('medspa'));
 }
 
-function reset(nicheId, overrides) {
-  return save(buildSeed(nicheId || 'medspa', overrides || {}));
+function reset(sid, nicheId) {
+  return save(sid, buildSeed(niches[nicheId] ? nicheId : 'medspa'));
 }
 
-function personalize(payload) {
-  const current = getState();
-  const nicheId = payload.nicheId || current.business.nicheId;
-  const next = buildSeed(nicheId, {
+function clean(value, max) {
+  if (value === undefined || value === null) return undefined;
+  const s = String(value)
+    .replace(/[\u0000-\u001f<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+  return s || undefined;
+}
+
+function sanitizePersonalize(payload = {}) {
+  const rating = Number(payload.rating);
+  return {
+    nicheId: niches[payload.nicheId] ? payload.nicheId : undefined,
+    businessName: clean(payload.businessName, 60),
+    city: clean(payload.city, 40),
+    currencyCode: currencies[payload.currencyCode] ? payload.currencyCode : undefined,
+    rating: Number.isFinite(rating) && rating >= 1 && rating <= 5 ? Math.round(rating * 10) / 10 : undefined,
+    ownerFirstName: clean(payload.ownerFirstName, 30),
+    region: clean(payload.region, 30)
+  };
+}
+
+function personalize(sid, raw) {
+  const payload = sanitizePersonalize(raw);
+  const current = getState(sid);
+  const nicheChanged = payload.nicheId && payload.nicheId !== current.business.nicheId;
+  const next = buildSeed(payload.nicheId || current.business.nicheId, {
     businessName: payload.businessName || current.business.name,
     city: payload.city || current.business.city,
     currencyCode: payload.currencyCode || current.business.currencyCode,
     rating: payload.rating || current.business.rating,
-    ownerFirstName: payload.ownerFirstName || current.business.ownerFirstName,
+    ownerFirstName: payload.ownerFirstName || (nicheChanged ? undefined : current.business.ownerFirstName),
     region: payload.region
   });
-  return save(next);
+  return save(sid, next);
 }
 
-function updateState(mutator) {
-  const state = getState();
+function updateState(sid, mutator) {
+  const state = getState(sid);
   mutator(state);
-  return save(state);
+  return save(sid, state);
+}
+
+function sessionCount() {
+  return sessions.size;
 }
 
 module.exports = {
@@ -533,5 +594,6 @@ module.exports = {
   reset,
   personalize,
   updateState,
-  buildSeed
+  buildSeed,
+  sessionCount
 };

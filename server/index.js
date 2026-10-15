@@ -1,16 +1,42 @@
+const fs = require('fs');
+const path = require('path');
+
+const envFile = path.join(__dirname, '.env');
+if (fs.existsSync(envFile) && typeof process.loadEnvFile === 'function') process.loadEnvFile(envFile);
+
 const express = require('express');
 const cors = require('cors');
 const dayjs = require('dayjs');
 const { niches, currencies, listNiches } = require('./data/nichePresets');
 const store = require('./data/store');
 const prospects = require('./data/prospects');
+const auth = require('./lib/auth');
 const { validateProspect, validateActivity, rowsFromCsv } = require('./lib/validateProspect');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const PRODUCTION = process.env.NODE_ENV === 'production';
+const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
-app.use(cors());
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+if (!PRODUCTION) app.use(cors());
+app.use((_req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
+  });
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
+app.use('/api', (req, _res, next) => {
+  const id = req.get('x-demo-id') || '';
+  req.sid = /^[A-Za-z0-9_-]{8,64}$/.test(id) ? id : 'shared';
+  next();
+});
+
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 function money(amount, symbol) {
   return `${symbol}${Number(amount).toLocaleString('en-US')}`;
@@ -208,26 +234,31 @@ function addActivity(state, type, text) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, product: 'PulseLocal AI', time: new Date().toISOString() });
+  res.json({ ok: true, product: 'PulseLocal AI', storage: prospects.backend.name, time: new Date().toISOString() });
 });
+
+app.get('/api/auth/me', auth.me);
+app.post('/api/auth/login', auth.login);
+
+app.use(['/api/prospects', '/api/outreach'], auth.requireOwner);
 
 app.get('/api/niches', (_req, res) => {
   res.json({ niches: listNiches(), currencies: Object.values(currencies) });
 });
 
-app.get('/api/state', (_req, res) => {
-  res.json(store.getState());
+app.get('/api/state', (req, res) => {
+  res.json(store.getState(req.sid));
 });
 
 app.post('/api/reset', (req, res) => {
   const { nicheId } = req.body || {};
-  res.json(store.reset(nicheId || 'medspa'));
+  res.json(store.reset(req.sid, nicheId || 'medspa'));
 });
 
 app.post('/api/personalize', (req, res) => {
   const body = req.body || {};
   res.json(
-    store.personalize({
+    store.personalize(req.sid, {
       nicheId: body.nicheId,
       businessName: body.businessName,
       city: body.city,
@@ -241,7 +272,7 @@ app.post('/api/personalize', (req, res) => {
 
 app.post('/api/leads/:id/reply', (req, res) => {
   const { text, from } = req.body || {};
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const lead = s.leads.find((l) => l.id === req.params.id);
     if (!lead) return;
     const who = from === 'ai' ? 'ai' : 'staff';
@@ -261,7 +292,7 @@ app.post('/api/leads/:id/reply', (req, res) => {
 app.post('/api/leads/:id/ai-reply', (req, res) => {
   const { text } = req.body || {};
   let reply = '';
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const lead = s.leads.find((l) => l.id === req.params.id);
     if (!lead) return;
     lead.messages.push({
@@ -289,7 +320,7 @@ app.post('/api/leads/:id/ai-reply', (req, res) => {
 app.post('/api/simulate/missed-call', (req, res) => {
   const customer = (req.body && req.body.customer) || 'New caller';
   const phone = (req.body && req.body.phone) || '+1 (214) 555-0199';
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const opener = `Hi, this is ${s.business.name} — sorry we missed your call just now. Are you looking to book, get pricing, or something urgent? Reply here and I’ll help in seconds.`;
     const lead = {
       id: store.uid('lead'),
@@ -333,7 +364,7 @@ app.post('/api/simulate/missed-call', (req, res) => {
 
 app.post('/api/simulate/instagram', (req, res) => {
   const customer = (req.body && req.body.customer) || 'IG prospect';
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const top = s.business.services.find((x) => x.popular) || s.business.services[0];
     const inbound = `Hey do you have openings for ${top.name}?`;
     const generated = generateAiReply(s.business, inbound);
@@ -371,7 +402,7 @@ app.post('/api/simulate/instagram', (req, res) => {
 app.post('/api/chat', (req, res) => {
   const { text, channel } = req.body || {};
   let reply = '';
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const generated = generateAiReply(s.business, text, s.simulator?.lastServiceId);
     reply = generated.text;
     const msgIn = {
@@ -439,7 +470,7 @@ app.post('/api/chat', (req, res) => {
 
 app.post('/api/bookings', (req, res) => {
   const body = req.body || {};
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const service =
       s.business.services.find((x) => x.id === body.serviceId) || s.business.services[0];
     const start = body.start ? dayjs(body.start) : dayjs().add(1, 'day').hour(11).minute(0);
@@ -467,7 +498,7 @@ app.post('/api/bookings', (req, res) => {
 
 app.patch('/api/bookings/:id', (req, res) => {
   const { status } = req.body || {};
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const b = s.bookings.find((x) => x.id === req.params.id);
     if (b && status) b.status = status;
   });
@@ -475,7 +506,7 @@ app.patch('/api/bookings/:id', (req, res) => {
 });
 
 app.post('/api/bookings/:id/complete-and-review', (req, res) => {
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const b = s.bookings.find((x) => x.id === req.params.id);
     if (!b) return;
     b.status = 'completed';
@@ -488,7 +519,7 @@ app.post('/api/bookings/:id/complete-and-review', (req, res) => {
 
 app.post('/api/reviews/request', (req, res) => {
   const { customer } = req.body || {};
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     s.reviewCampaigns.sent += 1;
     addActivity(s, 'review', `Manual review request sent${customer ? ` to ${customer}` : ''}`);
   });
@@ -498,7 +529,7 @@ app.post('/api/reviews/request', (req, res) => {
 app.post('/api/reviews/submit', (req, res) => {
   const { stars, text, customer } = req.body || {};
   const rating = Number(stars) || 5;
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     if (rating >= 4) {
       s.reviews.unshift({
         id: store.uid('rev'),
@@ -537,7 +568,7 @@ app.post('/api/reviews/submit', (req, res) => {
 
 app.post('/api/reviews/resolve', (req, res) => {
   const { id } = req.body || {};
-  const state = store.updateState((s) => {
+  const state = store.updateState(req.sid, (s) => {
     const flag = s.privateFlags.find((f) => f.id === id);
     if (flag) flag.status = 'resolved';
   });
@@ -545,10 +576,11 @@ app.post('/api/reviews/resolve', (req, res) => {
 });
 
 app.get('/api/outreach', (req, res) => {
-  const s = store.getState();
+  const s = store.getState(req.sid);
   const b = s.business;
-  const origin = req.query.origin || 'http://localhost:5173';
-  const demoLink = `${origin}/?biz=${encodeURIComponent(b.name)}&niche=${b.nicheId}&city=${encodeURIComponent(b.city)}&currency=${b.currencyCode}&rating=${b.rating}`;
+  const requested = String(req.query.origin || '');
+  const origin = /^https?:\/\/[^\s/]+$/i.test(requested) ? requested : `${req.protocol}://${req.get('host')}`;
+  const demoLink = `${origin}/?biz=${encodeURIComponent(b.name)}&niche=${b.nicheId}&city=${encodeURIComponent(b.city)}&currency=${b.currencyCode}&rating=${b.rating}&owner=${encodeURIComponent(b.ownerFirstName)}`;
   const top = b.services.find((x) => x.popular) || b.services[0];
   const lostJobs = Math.max(4, Math.round(s.metrics.missedCallsSaved / 8));
   const saveVsPodium = s.metrics.competitorMonthly - 79;
@@ -617,53 +649,53 @@ If you want, I’ll personalize the AI on a 10-min call this week.
   });
 });
 
-app.get('/api/prospects', (_req, res) => {
-  res.json({ prospects: prospects.list() });
-});
+app.get('/api/prospects', wrap(async (_req, res) => {
+  res.json({ prospects: await prospects.list() });
+}));
 
-app.post('/api/prospects', (req, res) => {
+app.post('/api/prospects', wrap(async (req, res) => {
   const result = validateProspect(req.body);
   if (!result.ok) return res.status(422).json({ errors: result.errors });
-  const dup = prospects.findDuplicate(result.value);
+  const dup = await prospects.findDuplicate(result.value);
   if (dup) {
     return res.status(409).json({ errors: { businessName: `Already in your pipeline as “${dup.businessName}” (${dup.city})` } });
   }
-  const prospect = prospects.create(result.value);
-  res.status(201).json({ prospect, prospects: prospects.list() });
-});
+  const prospect = await prospects.create(result.value);
+  res.status(201).json({ prospect, prospects: await prospects.list() });
+}));
 
-app.patch('/api/prospects/:id', (req, res) => {
+app.patch('/api/prospects/:id', wrap(async (req, res) => {
   const result = validateProspect(req.body, { partial: true });
   if (!result.ok) return res.status(422).json({ errors: result.errors });
   if (result.value.businessName || result.value.email || result.value.instagram) {
-    const current = prospects.list().find((p) => p.id === req.params.id);
+    const current = await prospects.get(req.params.id);
     if (!current) return res.status(404).json({ message: 'Prospect not found' });
     const merged = { ...current, ...result.value };
     if (!merged.email && !merged.instagram) {
       return res.status(422).json({ errors: { email: 'Add an email or an Instagram handle' } });
     }
-    const dup = prospects.findDuplicate(merged, req.params.id);
+    const dup = await prospects.findDuplicate(merged, req.params.id);
     if (dup) return res.status(409).json({ errors: { businessName: `Duplicate of “${dup.businessName}” (${dup.city})` } });
   }
-  const prospect = prospects.update(req.params.id, result.value);
+  const prospect = await prospects.update(req.params.id, result.value);
   if (!prospect) return res.status(404).json({ message: 'Prospect not found' });
-  res.json({ prospect, prospects: prospects.list() });
-});
+  res.json({ prospect, prospects: await prospects.list() });
+}));
 
-app.delete('/api/prospects/:id', (req, res) => {
-  if (!prospects.remove(req.params.id)) return res.status(404).json({ message: 'Prospect not found' });
-  res.json({ prospects: prospects.list() });
-});
+app.delete('/api/prospects/:id', wrap(async (req, res) => {
+  if (!(await prospects.remove(req.params.id))) return res.status(404).json({ message: 'Prospect not found' });
+  res.json({ prospects: await prospects.list() });
+}));
 
-app.post('/api/prospects/:id/activity', (req, res) => {
+app.post('/api/prospects/:id/activity', wrap(async (req, res) => {
   const result = validateActivity(req.body);
   if (!result.ok) return res.status(422).json({ errors: result.errors });
-  const prospect = prospects.addActivity(req.params.id, result.value);
+  const prospect = await prospects.addActivity(req.params.id, result.value);
   if (!prospect) return res.status(404).json({ message: 'Prospect not found' });
-  res.json({ prospect, prospects: prospects.list() });
-});
+  res.json({ prospect, prospects: await prospects.list() });
+}));
 
-app.post('/api/prospects/import', (req, res) => {
+app.post('/api/prospects/import', wrap(async (req, res) => {
   const csv = String(req.body?.csv || '');
   const dryRun = Boolean(req.body?.dryRun);
   if (!csv.trim()) return res.status(422).json({ message: 'Paste CSV text or choose a file' });
@@ -673,21 +705,20 @@ app.post('/api/prospects/import', (req, res) => {
 
   const valid = [];
   const skipped = [];
-  const seen = new Set();
-  parsed.items.forEach(({ line, data }) => {
+  const existing = await prospects.list();
+  for (const { line, data } of parsed.items) {
     const result = validateProspect(data);
     if (!result.ok) {
       skipped.push({ line, businessName: data.businessName, errors: Object.values(result.errors) });
-      return;
+      continue;
     }
-    const key = result.value.email || result.value.instagram || `${result.value.businessName}|${result.value.city}`.toLowerCase();
-    if (seen.has(key) || prospects.findDuplicate(result.value)) {
-      skipped.push({ line, businessName: data.businessName, errors: ['Duplicate — already in pipeline'] });
-      return;
+    const pool = [...existing, ...valid.map((v) => v.value)];
+    if (await prospects.findDuplicate(result.value, null, pool)) {
+      skipped.push({ line, businessName: data.businessName, errors: ['Duplicate — already in pipeline or earlier in this file'] });
+      continue;
     }
-    seen.add(key);
     valid.push({ line, value: result.value });
-  });
+  }
 
   if (dryRun) {
     return res.json({
@@ -696,22 +727,44 @@ app.post('/api/prospects/import', (req, res) => {
       skipped
     });
   }
-  const created = prospects.createMany(valid.map((v) => v.value));
-  res.json({ imported: created.length, skipped, prospects: prospects.list() });
+  const created = await prospects.createMany(valid.map((v) => v.value));
+  res.json({ imported: created.length, skipped, prospects: await prospects.list() });
+}));
+
+app.post('/api/prospects/reset', wrap(async (_req, res) => {
+  res.json({ prospects: await prospects.reset() });
+}));
+
+app.use('/api', (_req, res) => {
+  res.status(404).json({ message: 'Not found' });
 });
 
-app.post('/api/prospects/reset', (_req, res) => {
-  res.json({ prospects: prospects.reset() });
-});
+if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+  app.use(express.static(CLIENT_DIST, { index: false, maxAge: '7d', setHeaders: (res, file) => {
+    if (file.endsWith('.html')) res.set('Cache-Control', 'no-cache');
+  } }));
+  app.get('*', (_req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+  });
+}
 
 app.use((err, _req, res, _next) => {
   if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid JSON body' });
   if (err.type === 'entity.too.large') return res.status(413).json({ message: 'Upload is too large (1 MB max)' });
   console.error(err);
-  res.status(500).json({ message: 'Something went wrong on the server' });
+  const dbDown = /mongo|ECONNREFUSED|ENOTFOUND|Server selection/i.test(String(err.message));
+  res.status(dbDown ? 503 : 500).json({
+    message: dbDown ? 'Pipeline database is unreachable. Check MONGODB_URI and Atlas network access.' : 'Something went wrong on the server'
+  });
 });
 
 app.listen(PORT, () => {
-  store.getState();
-  console.log(`PulseLocal AI API running on http://localhost:${PORT}`);
+  console.log(`PulseLocal AI running on http://localhost:${PORT} · pipeline storage: ${prospects.backend.name}`);
+  if (prospects.backend.connect) {
+    prospects.backend
+      .connect()
+      .then(() => console.log('[db] Connected to MongoDB'))
+      .catch((err) => console.error('[db] MongoDB connection failed:', err.message));
+  }
 });

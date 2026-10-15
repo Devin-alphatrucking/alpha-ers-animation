@@ -13,14 +13,17 @@ npm run dev
 - App: http://localhost:5173 (Vite will jump to 5174/5175 if that port is busy)
 - API: http://localhost:4000
 - Keep both running with `npm run dev` from the project root. If you already have a terminal open, just refresh the browser.
+- Locally, no password is needed for the Pipeline unless you set `ADMIN_PASSWORD` in `server/.env`.
 
 ## Personalized demo links (for Instagram / email)
 
 Brand the whole product as the prospect before you send a Loom:
 
 ```
-http://localhost:5173/?biz=Miami+Glow+MedSpa&niche=medspa&city=Miami&currency=USD&rating=4.6
+https://your-app.onrender.com/?biz=Miami+Glow+MedSpa&niche=medspa&city=Miami&currency=USD&rating=4.6&owner=Sofia
 ```
+
+Every visitor gets their own private copy of the demo, so two prospects opening links at the same time never see each other's branding or clicks.
 
 Niches: `medspa` · `dental` · `detailing` · `homeservices`  
 Currency: `USD` `GBP` `AUD` `CAD` `EUR`
@@ -36,7 +39,48 @@ Open **Your sales → Pipeline** (`/prospects`) to track every business you pitc
 - Open a card → **Brand demo & open scripts** loads that business into the demo and opens the Pitch kit with their name pre-filled.
 - Log DMs, emails, replies, and demos in one click; follow-ups due today show in the sidebar badge.
 
-Pipeline data lives in `server/data/prospects.json` and is not touched by the demo reset.
+Locally, pipeline data lives in `server/data/prospects.json`. Online, it lives in MongoDB. The demo reset never touches it.
+
+The Pipeline and Pitch kit are owner-only. Online they need the password you set in `ADMIN_PASSWORD` (log in at `/login`). Prospects opening your demo link never see them.
+
+## Put it online (Render + MongoDB Atlas, $0/month)
+
+### 1. Create the free database (about 5 minutes)
+
+1. Sign up at [mongodb.com/atlas](https://www.mongodb.com/cloud/atlas/register) and create a free **M0** cluster.
+2. **Database Access** → Add user → choose a username and a password with letters and numbers only (no `@`, `:` or `/`).
+3. **Network Access** → Add IP address → **Allow access from anywhere** (`0.0.0.0/0`). Render's free servers don't have a fixed IP.
+4. **Connect** → Drivers → copy the connection string. It looks like
+   `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`
+   Replace `<password>` with your real password.
+
+### 2. Deploy on Render (about 5 minutes)
+
+1. Sign up at [render.com](https://render.com) with your GitHub account.
+2. **New → Blueprint** → pick the `alpha-ers-animation` repo. Render reads `render.yaml` automatically.
+3. It asks for two values:
+   - `ADMIN_PASSWORD`: the password for your Pipeline (use something long).
+   - `MONGODB_URI`: the Atlas connection string from step 1.
+4. Click **Apply**. The first build takes 3–5 minutes. Your link will be `https://pulselocal-XXXX.onrender.com`.
+5. Open `https://your-link/api/health`. It should show `"storage":"mongodb"`.
+6. Open `https://your-link/login`, enter your password, and your pipeline is there.
+
+Every `git push` to `main` redeploys automatically.
+
+### 3. Keep it awake (important for cold DMs)
+
+Render's free plan puts the app to sleep after 15 minutes without visitors, and the next visit takes 30–50 seconds to wake up. A prospect won't wait that long. To prevent it:
+
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free).
+2. Add an **HTTP(s)** monitor for `https://your-link/api/health` every **5 minutes**.
+
+One always-on free service fits inside Render's 750 free hours a month.
+
+### Notes
+
+- Visitor demos are kept in memory for 12 hours, then cleared. Opening the link again rebuilds the demo from the link, so nothing is lost for the prospect.
+- Optional custom domain (e.g. `demo.yourbrand.com`): Render → your service → Settings → Custom Domains.
+- To run the production setup locally: copy `server/.env.example` to `server/.env`, fill it in, then run `npm run build` and `npm start`.
 
 ## What to click on a sales call / Loom
 

@@ -14,7 +14,7 @@ import { useDemo } from '../context/DemoContext';
 import { Btn, Count, PageShell, Surface } from '../components/ui';
 
 export default function Dashboard() {
-  const { state } = useDemo();
+  const { state, owner } = useDemo();
   const { business: b, metrics: m, weekly, funnel, activity } = state;
   const [leadsPerWeek, setLeadsPerWeek] = useState(18);
   const [closeRate, setCloseRate] = useState(35);
@@ -39,9 +39,15 @@ export default function Dashboard() {
           <Btn as={Link} to="/inbox" variant="primary">
             Run missed-call demo
           </Btn>
-          <Btn as={Link} to="/outreach" variant="ghost">
-            Open pitch kit
-          </Btn>
+          {owner ? (
+            <Btn as={Link} to="/outreach" variant="ghost">
+              Open pitch kit
+            </Btn>
+          ) : (
+            <Btn as={Link} to="/reviews" variant="ghost">
+              See the review booster
+            </Btn>
+          )}
         </>
       }
     >

@@ -341,7 +341,7 @@ export function Toast({ toast }) {
     <div
       ref={ref}
       className={cx(
-        'fixed bottom-5 right-5 z-[70] max-w-sm rounded-[6px] px-4 py-3 text-[13px] text-paper shadow-[0_12px_40px_rgba(23,21,15,0.18)]',
+        'fixed bottom-20 left-4 right-4 z-[70] md:bottom-5 md:left-auto md:right-5 md:max-w-sm rounded-[6px] px-4 py-3 text-[13px] text-paper shadow-[0_12px_40px_rgba(23,21,15,0.18)]',
         error ? 'bg-ember' : 'bg-ink'
       )}
     >

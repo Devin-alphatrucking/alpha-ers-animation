@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../api';
+import { api, ownerToken, setUnauthorizedHandler } from '../api';
 
 const DemoContext = createContext(null);
 
@@ -20,10 +20,39 @@ export function DemoProvider({ children }) {
     window.setTimeout(() => setToast(null), 2600);
   }, []);
 
+  const [owner, setOwner] = useState(false);
+  const [authEnabled, setAuthEnabled] = useState(false);
+
   const refreshProspects = useCallback(async () => {
     const data = await api.prospects();
     setProspects(data.prospects);
     return data.prospects;
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setOwner(false);
+      setProspects([]);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  const login = useCallback(
+    async (password) => {
+      const res = await api.login(password);
+      ownerToken.set(res.token);
+      setOwner(true);
+      await refreshProspects().catch(() => {});
+      return true;
+    },
+    [refreshProspects]
+  );
+
+  const logout = useCallback(() => {
+    ownerToken.set('');
+    setOwner(false);
+    setProspects([]);
+    window.sessionStorage.removeItem('pl_active_prospect');
   }, []);
 
   const selectProspect = useCallback((id) => {
@@ -33,8 +62,8 @@ export function DemoProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refreshProspects().catch(() => {});
-  }, [refreshProspects]);
+    if (owner) refreshProspects().catch(() => {});
+  }, [owner, refreshProspects]);
 
   const refresh = useCallback(async () => {
     const data = await api.state();
@@ -52,7 +81,8 @@ export function DemoProvider({ children }) {
           niche: next.business.nicheId,
           city: next.business.city,
           currency: next.business.currencyCode,
-          rating: String(next.business.rating)
+          rating: String(next.business.rating),
+          owner: next.business.ownerFirstName
         };
         setSearchParams(params, { replace: true });
       }
@@ -86,16 +116,20 @@ export function DemoProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        const meta = await api.niches();
+        const [meta, who] = await Promise.all([api.niches(), api.me().catch(() => ({ owner: false, authEnabled: true }))]);
         if (cancelled) return;
         setNiches(meta.niches);
         setCurrencies(meta.currencies);
+        setOwner(Boolean(who.owner));
+        setAuthEnabled(Boolean(who.authEnabled));
+        if (!who.owner && ownerToken.get()) ownerToken.set('');
 
         const biz = searchParams.get('biz') || searchParams.get('business');
         const niche = searchParams.get('niche');
         const city = searchParams.get('city');
         const currency = searchParams.get('currency');
         const rating = searchParams.get('rating');
+        const ownerName = searchParams.get('owner');
 
         if (biz || niche || city || currency || rating) {
           const next = await api.personalize({
@@ -103,7 +137,8 @@ export function DemoProvider({ children }) {
             nicheId: niche || undefined,
             city: city || undefined,
             currencyCode: currency || undefined,
-            rating: rating || undefined
+            rating: rating || undefined,
+            ownerFirstName: ownerName || undefined
           });
           if (!cancelled) setState(next);
         } else {
@@ -131,7 +166,8 @@ export function DemoProvider({ children }) {
       niche: b.nicheId,
       city: b.city,
       currency: b.currencyCode,
-      rating: String(b.rating)
+      rating: String(b.rating),
+      owner: b.ownerFirstName
     });
     return `${window.location.origin}/?${params.toString()}`;
   }, [state]);
@@ -153,7 +189,11 @@ export function DemoProvider({ children }) {
     refreshProspects,
     activeProspect: prospects.find((p) => p.id === activeProspectId) || null,
     selectProspect,
-    brandForProspect
+    brandForProspect,
+    owner,
+    authEnabled,
+    login,
+    logout
   };
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
