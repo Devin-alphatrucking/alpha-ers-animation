@@ -5,6 +5,7 @@ import { api, formatMoney, formatWhen } from '../api';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
 import { gsap } from '../lib/motion';
+import { trackAction } from '../lib/track';
 import { Badge, Btn, Field, PageShell, Segmented, Select, Surface, inputCls, useShake } from '../components/ui';
 
 const statusTone = {
@@ -116,6 +117,7 @@ export default function Bookings() {
         source: 'Link-in-bio'
       });
       setState(data);
+      trackAction('booking');
       setCustomer('');
       setPhone('');
       setErrors({});

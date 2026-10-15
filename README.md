@@ -38,6 +38,7 @@ Open **Your sales → Pipeline** (`/prospects`) to track every business you pitc
 - Drag cards between stages: New → Contacted → Replied → Demo booked → Won / Lost.
 - Open a card → **Brand demo & open scripts** loads that business into the demo and opens the Pitch kit with their name pre-filled.
 - Log DMs, emails, replies, and demos in one click; follow-ups due today show in the sidebar badge.
+- **Demo view tracking:** links copied for a prospect (Pitch kit with that prospect picked, or **Copy tracked link** on their card) carry a private `ref` code. When they open it, their timeline shows when, on what device, for how long, and what they tried, e.g. *"Opened your demo on iPhone · 4 min · viewed Inbox, Reviews · missed-call text-back"*. Anyone who opened in the last 48 hours appears in the green **Just opened your demo** strip. Opens while you're logged in as the owner aren't counted, and Instagram/WhatsApp link previews don't count as opens.
 
 Locally, pipeline data lives in `server/data/prospects.json`. Online, it lives in MongoDB. The demo reset never touches it.
 

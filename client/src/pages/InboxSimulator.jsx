@@ -5,6 +5,7 @@ import { api, formatMoney, timeAgo } from '../api';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
 import { popIn } from '../lib/motion';
+import { trackAction } from '../lib/track';
 import { Btn, PageShell, Segmented, Surface, inputCls, useShake } from '../components/ui';
 
 const channelMeta = {
@@ -92,6 +93,7 @@ export default function InboxSimulator() {
     try {
       const next = await api.missedCall('Alex Rivera');
       setState(next);
+      trackAction('missed_call');
       setSimMode('sms');
       if (next.simulator?.leadId) setActiveId(next.simulator.leadId);
       showToast('Missed call recovered in 8 seconds');
@@ -105,6 +107,7 @@ export default function InboxSimulator() {
     try {
       const next = await api.instagram('jordan.styles');
       setState(next);
+      trackAction('instagram');
       setSimMode('instagram');
       if (next.simulator?.leadId) setActiveId(next.simulator.leadId);
       showToast('Instagram DM quoted live pricing');
@@ -124,8 +127,10 @@ export default function InboxSimulator() {
     }
     setBusy(true);
     try {
-      const { state: next } = await api.chat(simInput.trim(), simMode);
+      const { state: next, reply } = await api.chat(simInput.trim(), simMode);
       setState(next);
+      trackAction('chat');
+      if (typeof reply === 'string' && reply.startsWith('Booked')) trackAction('booking');
       setSimInput('');
       if (next.simulator?.leadId) setActiveId(next.simulator.leadId);
     } finally {

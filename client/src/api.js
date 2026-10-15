@@ -91,7 +91,8 @@ export const api = {
     request('/api/reviews/submit', { method: 'POST', body: JSON.stringify(payload) }),
   resolveFlag: (id) =>
     request('/api/reviews/resolve', { method: 'POST', body: JSON.stringify({ id }) }),
-  outreach: (origin) => request(`/api/outreach?origin=${encodeURIComponent(origin)}`),
+  outreach: (origin, prospectId) =>
+    request(`/api/outreach?origin=${encodeURIComponent(origin)}${prospectId ? `&prospect=${encodeURIComponent(prospectId)}` : ''}`),
   prospects: () => request('/api/prospects'),
   createProspect: (payload) => request('/api/prospects', { method: 'POST', body: JSON.stringify(payload) }),
   updateProspect: (id, payload) =>

@@ -240,6 +240,42 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/auth/me', auth.me);
 app.post('/api/auth/login', auth.login);
 
+const trackHits = new Map();
+setInterval(() => trackHits.clear(), 10 * 60 * 1000).unref();
+
+function deviceFrom(ua = '') {
+  if (/iPhone|iPod/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? 'Android' : 'Android tablet';
+  if (/Macintosh|Windows|Linux|CrOS/i.test(ua)) return 'Desktop';
+  return '';
+}
+
+app.post('/api/track', wrap(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  const hits = (trackHits.get(ip) || 0) + 1;
+  trackHits.set(ip, hits);
+  if (hits > 300) return res.status(429).end();
+
+  const { ref, visitId, type, page, action } = req.body || {};
+  if (
+    typeof ref !== 'string' ||
+    !/^[a-z0-9]{10}$/.test(ref) ||
+    typeof visitId !== 'string' ||
+    !/^[A-Za-z0-9_-]{8,40}$/.test(visitId) ||
+    !['open', 'page', 'action', 'ping'].includes(type)
+  ) {
+    return res.status(204).end();
+  }
+  await prospects.recordView(ref, visitId, {
+    type,
+    page: prospects.PAGES.includes(page) ? page : undefined,
+    action: prospects.ACTIONS.includes(action) ? action : undefined,
+    device: deviceFrom(req.get('user-agent'))
+  });
+  res.status(204).end();
+}));
+
 app.use(['/api/prospects', '/api/outreach'], auth.requireOwner);
 
 app.get('/api/niches', (_req, res) => {
@@ -575,12 +611,14 @@ app.post('/api/reviews/resolve', (req, res) => {
   res.json(state);
 });
 
-app.get('/api/outreach', (req, res) => {
+app.get('/api/outreach', wrap(async (req, res) => {
   const s = store.getState(req.sid);
   const b = s.business;
   const requested = String(req.query.origin || '');
   const origin = /^https?:\/\/[^\s/]+$/i.test(requested) ? requested : `${req.protocol}://${req.get('host')}`;
-  const demoLink = `${origin}/?biz=${encodeURIComponent(b.name)}&niche=${b.nicheId}&city=${encodeURIComponent(b.city)}&currency=${b.currencyCode}&rating=${b.rating}&owner=${encodeURIComponent(b.ownerFirstName)}`;
+  const tracked = req.query.prospect ? await prospects.get(String(req.query.prospect)) : null;
+  const ref = tracked && tracked.businessName === b.name ? `&ref=${tracked.trackId}` : '';
+  const demoLink = `${origin}/?biz=${encodeURIComponent(b.name)}&niche=${b.nicheId}&city=${encodeURIComponent(b.city)}&currency=${b.currencyCode}&rating=${b.rating}&owner=${encodeURIComponent(b.ownerFirstName)}${ref}`;
   const top = b.services.find((x) => x.popular) || b.services[0];
   const lostJobs = Math.max(4, Math.round(s.metrics.missedCallsSaved / 8));
   const saveVsPodium = s.metrics.competitorMonthly - 79;
@@ -647,7 +685,7 @@ If you want, I’ll personalize the AI on a 10-min call this week.
       yearlySaved: saveVsPodium * 12
     }
   });
-});
+}));
 
 app.get('/api/prospects', wrap(async (_req, res) => {
   res.json({ prospects: await prospects.list() });

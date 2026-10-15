@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Area,
@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { formatMoney, timeAgo } from '../api';
 import { useDemo } from '../context/DemoContext';
+import { trackAction } from '../lib/track';
 import { Btn, Count, PageShell, Surface } from '../components/ui';
 
 export default function Dashboard() {
@@ -20,6 +21,12 @@ export default function Dashboard() {
   const [closeRate, setCloseRate] = useState(35);
   const [ticket, setTicket] = useState(m.avgTicket);
   const [plan, setPlan] = useState(79);
+  const roiTracked = useRef(false);
+  const touchRoi = () => {
+    if (roiTracked.current) return;
+    roiTracked.current = true;
+    trackAction('roi');
+  };
 
   const roi = useMemo(() => {
     const captured = leadsPerWeek * 4 * (closeRate / 100) * 0.45;
@@ -149,7 +156,10 @@ export default function Dashboard() {
                 min="6"
                 max="40"
                 value={leadsPerWeek}
-                onChange={(e) => setLeadsPerWeek(Number(e.target.value))}
+                onChange={(e) => {
+                  setLeadsPerWeek(Number(e.target.value));
+                  touchRoi();
+                }}
                 className="mt-3 w-full"
               />
               <span className="mt-1 block font-mono text-[12px] text-ember">{leadsPerWeek}</span>
@@ -161,7 +171,10 @@ export default function Dashboard() {
                 min="15"
                 max="60"
                 value={closeRate}
-                onChange={(e) => setCloseRate(Number(e.target.value))}
+                onChange={(e) => {
+                  setCloseRate(Number(e.target.value));
+                  touchRoi();
+                }}
                 className="mt-3 w-full"
               />
               <span className="mt-1 block font-mono text-[12px] text-ember">{closeRate}%</span>
@@ -174,7 +187,10 @@ export default function Dashboard() {
                 max="1500"
                 step="10"
                 value={ticket}
-                onChange={(e) => setTicket(Number(e.target.value))}
+                onChange={(e) => {
+                  setTicket(Number(e.target.value));
+                  touchRoi();
+                }}
                 className="mt-3 w-full"
               />
               <span className="mt-1 block font-mono text-[12px] text-ember">{formatMoney(ticket, b.currency)}</span>
@@ -185,7 +201,10 @@ export default function Dashboard() {
             {[49, 79, 99].map((p) => (
               <button
                 key={p}
-                onClick={() => setPlan(p)}
+                onClick={() => {
+                  setPlan(p);
+                  touchRoi();
+                }}
                 className={`h-8 rounded-[5px] px-3 text-[12px] font-medium transition ${
                   plan === p ? 'bg-ember text-white' : 'bg-white/10 text-white/65 hover:bg-white/15'
                 }`}

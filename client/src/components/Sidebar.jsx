@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { CalendarCheck, Inbox, KanbanSquare, LayoutDashboard, Megaphone, Star } from 'lucide-react';
 import { useDemo } from '../context/DemoContext';
 import { formatMoney } from '../api';
-import { isDue } from '../lib/prospects';
+import { isDue, isHot } from '../lib/prospects';
 
 export const groups = [
   {
@@ -31,6 +31,7 @@ export default function Sidebar() {
   const { state, prospects, owner } = useDemo();
   const unread = state.leads.filter((l) => l.unread).length;
   const due = prospects.filter(isDue).length;
+  const hot = prospects.filter(isHot).length;
 
   return (
     <aside className="hidden w-[228px] shrink-0 flex-col bg-[#132822] text-[#f4efe4] md:flex">
@@ -67,6 +68,9 @@ export default function Sidebar() {
                         <span className="flex-1">{l.label}</span>
                         {l.badge === 'unread' && unread > 0 ? (
                           <span className="rounded-full bg-ember px-1.5 text-[10px] font-semibold leading-[18px] text-white">{unread}</span>
+                        ) : null}
+                        {l.badge === 'due' && hot > 0 ? (
+                          <span title={`${hot} opened your demo in the last 48h`} className="h-2 w-2 rounded-full bg-[#7fd1a4] live-dot" />
                         ) : null}
                         {l.badge === 'due' && due > 0 ? (
                           <span title="Follow-ups due" className="rounded-full bg-[#E8B04B] px-1.5 text-[10px] font-semibold leading-[18px] text-ink">

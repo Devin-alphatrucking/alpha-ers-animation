@@ -3,6 +3,7 @@ import { ShieldAlert, Star, ExternalLink, Send } from 'lucide-react';
 import { api, formatWhen, timeAgo } from '../api';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
+import { trackAction } from '../lib/track';
 import { Btn, Count, Field, PageShell, Surface, inputCls, useShake } from '../components/ui';
 
 function Stars({ value, onChange, size = 28 }) {
@@ -58,6 +59,7 @@ export default function ReviewBooster() {
     try {
       const res = await api.submitReview({ stars, text: text.trim(), customer: customer.trim() });
       setState(res.state);
+      trackAction('review');
       setResult(res);
       showToast(res.route === 'google' ? 'Routed to Google Maps' : 'Intercepted privately');
     } finally {

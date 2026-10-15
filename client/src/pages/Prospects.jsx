@@ -1,10 +1,21 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
-import { AlarmClock, AtSign, Instagram, LayoutGrid, Plus, Rows3, Search, Star, Upload, X } from 'lucide-react';
+import { AlarmClock, AtSign, Eye, Instagram, LayoutGrid, Plus, Rows3, Search, Star, Upload, X } from 'lucide-react';
 import { api, timeAgo } from '../api';
 import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
-import { OPEN_STAGES, STAGES, followUpLabel, followUpState, initials, isDue, nicheShort, stageLabel } from '../lib/prospects';
+import {
+  OPEN_STAGES,
+  STAGES,
+  followUpLabel,
+  followUpState,
+  initials,
+  isDue,
+  isHot,
+  nicheShort,
+  stageLabel,
+  viewedAgo
+} from '../lib/prospects';
 import { Badge, Btn, Count, PageShell, Segmented, Select, Surface } from '../components/ui';
 import ProspectForm from '../components/prospects/ProspectForm';
 import ProspectDetail from '../components/prospects/ProspectDetail';
@@ -21,6 +32,23 @@ function FollowChip({ p }) {
     >
       <AlarmClock size={11} />
       {followUpLabel(p)}
+    </span>
+  );
+}
+
+function ViewedChip({ p }) {
+  if (!p.lastViewedAt) return null;
+  const hot = isHot(p);
+  return (
+    <span
+      title={`Opened your demo ${p.views || 1}×`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+        hot ? 'bg-[#e3ece5] text-pine' : 'bg-canvas text-mute'
+      }`}
+    >
+      {hot ? <span className="h-1.5 w-1.5 rounded-full bg-moss live-dot" /> : <Eye size={11} />}
+      Viewed {viewedAgo(p)}
+      {p.views > 1 ? <span className="font-mono text-[10px] opacity-70">×{p.views}</span> : null}
     </span>
   );
 }
@@ -60,8 +88,9 @@ function Card({ p, onOpen, onDragStart, dragging }) {
         ) : null}
         <span className="ml-auto font-mono text-[11px] text-ink/70">${p.dealValue ?? 0}/mo</span>
       </div>
-      {followUpState(p) ? (
-        <div className="mt-2">
+      {followUpState(p) || p.lastViewedAt ? (
+        <div className="mt-2 flex flex-wrap gap-1">
+          <ViewedChip p={p} />
           <FollowChip p={p} />
         </div>
       ) : null}
@@ -95,7 +124,9 @@ export default function Prospects() {
       wonMrr: won.reduce((s, p) => s + (p.dealValue || 0), 0),
       wonCount: won.length,
       replyRate: contacted ? Math.round((replied / contacted) * 100) : 0,
-      due: prospects.filter(isDue)
+      due: prospects.filter(isDue),
+      opened: prospects.filter((p) => p.lastViewedAt).length,
+      hot: prospects.filter(isHot).sort((a, b) => new Date(b.lastViewedAt) - new Date(a.lastViewedAt))
     };
   }, [prospects]);
 
@@ -169,7 +200,7 @@ export default function Prospects() {
     >
       <Surface className="mb-5 grid grid-cols-2 divide-line md:grid-cols-5 md:divide-x">
         {[
-          { label: 'Prospects', value: stats.total, sub: `${stats.open} in play` },
+          { label: 'Prospects', value: stats.total, sub: `${stats.open} in play · ${stats.opened} opened demo` },
           { label: 'Open pipeline', value: stats.pipelineValue, prefix: '$', suffix: '/mo', sub: 'If every open deal signs' },
           { label: 'Reply rate', value: stats.replyRate, suffix: '%', sub: `${stats.demos} demo${stats.demos === 1 ? '' : 's'} booked` },
           { label: 'Won MRR', value: stats.wonMrr, prefix: '$', sub: `${stats.wonCount} paying client${stats.wonCount === 1 ? '' : 's'}`, accent: true },
@@ -184,6 +215,26 @@ export default function Prospects() {
           </div>
         ))}
       </Surface>
+
+      {stats.hot.length ? (
+        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-pine/25 bg-[#e8efe9] px-4 py-3">
+          <Eye size={15} className="text-pine" />
+          <p className="mr-1 text-[13px] font-semibold text-ink">Just opened your demo:</p>
+          {stats.hot.slice(0, 5).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setOpenId(p.id)}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full border border-pine/25 bg-paper px-3 text-[12px] font-medium text-ink transition hover:border-pine"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-moss live-dot" />
+              {p.businessName}
+              <span className="font-mono text-[10px] text-mute">{viewedAgo(p)}</span>
+            </button>
+          ))}
+          <span className="ml-auto hidden text-[12px] text-mute lg:inline">Message them while it’s fresh.</span>
+        </div>
+      ) : null}
 
       {stats.due.length ? (
         <div data-reveal className="mb-5 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/25 bg-[#fbf1ea] px-4 py-3">
@@ -335,12 +386,13 @@ export default function Prospects() {
         ) : (
           <Surface reveal={false} className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-left text-[13px]">
+              <table className="w-full min-w-[980px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-line bg-canvas/60 text-[11px] font-semibold uppercase tracking-[0.1em] text-mute">
                     <th className="px-4 py-2.5 font-semibold">Business</th>
                     <th className="px-4 py-2.5 font-semibold">Stage</th>
                     <th className="px-4 py-2.5 font-semibold">Contact</th>
+                    <th className="px-4 py-2.5 font-semibold">Opened</th>
                     <th className="px-4 py-2.5 font-semibold">Follow-up</th>
                     <th className="px-4 py-2.5 font-semibold">Last touch</th>
                     <th className="px-4 py-2.5 text-right font-semibold">Value</th>
@@ -365,6 +417,7 @@ export default function Prospects() {
                         {p.ownerName ? <p className="font-medium text-ink">{p.ownerName}</p> : null}
                         <p className="truncate">{p.email || (p.instagram ? `@${p.instagram}` : '—')}</p>
                       </td>
+                      <td className="px-4 py-3">{p.lastViewedAt ? <ViewedChip p={p} /> : <span className="text-[12px] text-mute">Not yet</span>}</td>
                       <td className="px-4 py-3">{followUpState(p) ? <FollowChip p={p} /> : <span className="text-mute">—</span>}</td>
                       <td className="px-4 py-3 text-[12px] text-mute">
                         <p className="max-w-[220px] truncate text-ink/80">{p.activity[0]?.text}</p>
@@ -375,7 +428,7 @@ export default function Prospects() {
                   ))}
                   {!filtered.length ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-[13px] text-mute">
+                      <td colSpan={7} className="px-4 py-12 text-center text-[13px] text-mute">
                         No prospects match these filters.
                       </td>
                     </tr>

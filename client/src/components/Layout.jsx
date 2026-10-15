@@ -1,5 +1,7 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useDemo } from '../context/DemoContext';
+import { trackPage } from '../lib/track';
 import Sidebar, { groups } from './Sidebar';
 import TopBar from './TopBar';
 import { Toast } from './ui';
@@ -40,6 +42,16 @@ function MobileNav() {
 
 export default function Layout() {
   const { toast } = useDemo();
+  const { pathname } = useLocation();
+  const firstPage = useRef(true);
+
+  useEffect(() => {
+    if (firstPage.current) {
+      firstPage.current = false;
+      return;
+    }
+    trackPage(pathname);
+  }, [pathname]);
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">

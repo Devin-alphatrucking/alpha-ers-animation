@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, ownerToken, setUnauthorizedHandler } from '../api';
+import { startTracking } from '../lib/track';
 
 const DemoContext = createContext(null);
 
@@ -123,6 +124,7 @@ export function DemoProvider({ children }) {
         setOwner(Boolean(who.owner));
         setAuthEnabled(Boolean(who.authEnabled));
         if (!who.owner && ownerToken.get()) ownerToken.set('');
+        startTracking({ owner: Boolean(who.owner), urlRef: searchParams.get('ref') });
 
         const biz = searchParams.get('biz') || searchParams.get('business');
         const niche = searchParams.get('niche');
@@ -158,9 +160,20 @@ export function DemoProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const activeProspect = prospects.find((p) => p.id === activeProspectId) || null;
+
+  useEffect(() => {
+    if (!owner) return undefined;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refreshProspects().catch(() => {});
+    }, 60000);
+    return () => window.clearInterval(id);
+  }, [owner, refreshProspects]);
+
   const demoLink = useMemo(() => {
     if (!state?.business) return window.location.origin;
     const b = state.business;
+    const tracked = activeProspect && activeProspect.businessName === b.name && activeProspect.trackId;
     const params = new URLSearchParams({
       biz: b.name,
       niche: b.nicheId,
@@ -169,8 +182,9 @@ export function DemoProvider({ children }) {
       rating: String(b.rating),
       owner: b.ownerFirstName
     });
+    if (tracked) params.set('ref', activeProspect.trackId);
     return `${window.location.origin}/?${params.toString()}`;
-  }, [state]);
+  }, [state, activeProspect]);
 
   const value = {
     state,
@@ -187,7 +201,7 @@ export function DemoProvider({ children }) {
     prospects,
     setProspects,
     refreshProspects,
-    activeProspect: prospects.find((p) => p.id === activeProspectId) || null,
+    activeProspect,
     selectProspect,
     brandForProspect,
     owner,

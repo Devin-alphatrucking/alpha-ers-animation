@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const backend = require('./prospectsBackend');
 
 const DAY = 86400000;
@@ -23,6 +24,37 @@ function iso(offsetDays, hour = 10) {
 
 function act(type, text, daysAgo) {
   return { id: uid('pa'), type, text, at: new Date(Date.now() - daysAgo * DAY).toISOString() };
+}
+
+function trackId() {
+  return crypto.randomBytes(8).toString('base64url').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).padEnd(10, '0').toLowerCase();
+}
+
+function freshTracking() {
+  return { trackId: trackId(), views: 0, lastViewedAt: null, visits: [] };
+}
+
+const PAGE_LABELS = { overview: 'Overview', inbox: 'Inbox', bookings: 'Bookings', reviews: 'Reviews' };
+const ACTION_LABELS = {
+  missed_call: 'missed-call text-back',
+  instagram: 'Instagram auto-reply',
+  chat: 'chatted with the AI',
+  booking: 'made a booking',
+  review: 'tried the review funnel',
+  roi: 'used the ROI calculator'
+};
+
+function duration(seconds) {
+  if (seconds < 60) return `${Math.max(5, Math.round(seconds / 5) * 5)} sec`;
+  return `${Math.round(seconds / 60)} min`;
+}
+
+function visitText(v) {
+  const parts = [`Opened your demo${v.device ? ` on ${v.device}` : ''}`, duration(v.seconds)];
+  const pages = v.pages.filter((p) => p !== 'overview').map((p) => PAGE_LABELS[p]);
+  if (pages.length) parts.push(`viewed ${pages.join(', ')}`);
+  if (v.actions.length) parts.push(v.actions.map((a) => ACTION_LABELS[a]).join(', '));
+  return parts.join(' · ');
 }
 
 function seed() {
@@ -153,11 +185,38 @@ function seed() {
     }
   ];
 
+  const sampleViews = {
+    'Glow Theory Aesthetics': [{ hoursAgo: 3, seconds: 252, device: 'iPhone', pages: ['overview', 'inbox', 'reviews'], actions: ['missed_call', 'chat'] }],
+    'Shine Lab Detailing': [
+      { hoursAgo: 50, seconds: 64, device: 'Android', pages: ['overview'], actions: [] },
+      { hoursAgo: 20, seconds: 381, device: 'Desktop', pages: ['overview', 'inbox', 'bookings', 'reviews'], actions: ['instagram', 'chat', 'booking', 'review'] }
+    ],
+    'Cool Breeze HVAC': [{ hoursAgo: 80, seconds: 143, device: 'Desktop', pages: ['overview', 'inbox'], actions: ['roi'] }]
+  };
+
   return base.map((p) => {
     const created = p.activity[0].at;
     const last = p.activity[p.activity.length - 1].at;
+    const visits = (sampleViews[p.businessName] || []).map((v) => {
+      const at = new Date(Date.now() - v.hoursAgo * 3600000).toISOString();
+      return {
+        id: uid('vis'),
+        startedAt: at,
+        lastSeenAt: new Date(Date.parse(at) + v.seconds * 1000).toISOString(),
+        seconds: v.seconds,
+        device: v.device,
+        pages: v.pages,
+        actions: v.actions
+      };
+    });
+    const viewActivity = visits.map((v) => ({ id: uid('pa'), type: 'viewed', visitId: v.id, text: visitText(v), at: v.startedAt }));
+    const activity = [...p.activity, ...viewActivity].sort((a, b) => new Date(a.at) - new Date(b.at));
     return {
       id: uid('pr'),
+      trackId: trackId(),
+      views: visits.length,
+      lastViewedAt: visits.length ? visits[visits.length - 1].lastSeenAt : null,
+      visits: [...visits].reverse(),
       ownerName: '',
       country: '',
       email: '',
@@ -168,9 +227,9 @@ function seed() {
       nextFollowUp: null,
       lastContactedAt: p.activity.some((a) => ['dm', 'email', 'call'].includes(a.type)) ? last : null,
       ...p,
-      activity: [...p.activity].reverse(),
+      activity: activity.reverse(),
       createdAt: created,
-      updatedAt: last
+      updatedAt: activity[0].at
     };
   });
 }
@@ -189,7 +248,15 @@ async function load() {
     }
     await seeding;
   }
-  return backend.all();
+  const all = await backend.all();
+  const missing = all.filter((p) => !p.trackId);
+  for (const p of missing) {
+    p.trackId = trackId();
+    p.views = p.views || 0;
+    p.visits = p.visits || [];
+    await backend.put(p);
+  }
+  return all;
 }
 
 async function list() {
@@ -229,6 +296,7 @@ async function create(value) {
     nextFollowUp: null,
     lastContactedAt: null,
     ...value,
+    ...freshTracking(),
     activity: [{ id: uid('pa'), type: 'note', text: 'Added to pipeline', at: now }],
     createdAt: now,
     updatedAt: now
@@ -257,6 +325,7 @@ async function createMany(values) {
     stage: 'new',
     ...value,
     dealValue: value.dealValue ?? 79,
+    ...freshTracking(),
     activity: [{ id: uid('pa'), type: 'note', text: 'Imported from CSV', at: now }],
     createdAt: now,
     updatedAt: now
@@ -322,10 +391,61 @@ async function addActivity(id, { type, text, advanceTo, followUpDays }) {
   return p;
 }
 
+const PAGES = Object.keys(PAGE_LABELS);
+const ACTIONS = Object.keys(ACTION_LABELS);
+const MAX_VISIT_SECONDS = 3 * 3600;
+
+async function recordView(ref, visitId, { type, page, action, device }) {
+  const p = (await load()).find((x) => x.trackId === ref);
+  if (!p) return false;
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+  p.visits = p.visits || [];
+  let visit = p.visits.find((v) => v.id === visitId);
+
+  if (!visit) {
+    if (type === 'ping') return true;
+    visit = { id: visitId, startedAt: nowIso, lastSeenAt: nowIso, seconds: 0, device, pages: [], actions: [] };
+    p.visits.unshift(visit);
+    p.visits = p.visits.slice(0, 30);
+    p.views = (p.views || 0) + 1;
+    p.activity.unshift({ id: uid('pa'), type: 'viewed', visitId, text: '', at: nowIso });
+  } else {
+    const gap = Math.max(0, (now - Date.parse(visit.lastSeenAt)) / 1000);
+    visit.seconds = Math.min(MAX_VISIT_SECONDS, visit.seconds + Math.min(gap, 30));
+    visit.lastSeenAt = nowIso;
+  }
+
+  if (PAGES.includes(page) && !visit.pages.includes(page)) visit.pages.push(page);
+  if (ACTIONS.includes(action) && !visit.actions.includes(action)) visit.actions.push(action);
+
+  const entry = p.activity.find((a) => a.visitId === visitId);
+  if (entry) entry.text = visitText(visit);
+  p.activity = p.activity.slice(0, 200);
+  p.lastViewedAt = nowIso;
+  p.updatedAt = nowIso;
+  await backend.put(p);
+  return true;
+}
+
 async function reset() {
   await backend.replaceAll(seed());
   await backend.markSeeded();
   return list();
 }
 
-module.exports = { list, get, create, createMany, update, remove, addActivity, findDuplicate, reset, backend };
+module.exports = {
+  list,
+  get,
+  create,
+  createMany,
+  update,
+  remove,
+  addActivity,
+  findDuplicate,
+  recordView,
+  reset,
+  backend,
+  PAGES,
+  ACTIONS
+};

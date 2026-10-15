@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   AtSign,
   CalendarCheck,
+  Copy,
+  Eye,
   Globe,
   Instagram,
   Mail,
@@ -19,7 +21,7 @@ import {
 } from 'lucide-react';
 import { api, timeAgo } from '../../api';
 import { useDemo } from '../../context/DemoContext';
-import { STAGES, followUpLabel, followUpState, nicheShort } from '../../lib/prospects';
+import { STAGES, followUpLabel, followUpState, isHot, nicheShort, trackedLink, viewedAgo } from '../../lib/prospects';
 import { Badge, Btn, Drawer, Field, Segmented, Select, inputCls, useShake } from '../ui';
 
 const QUICK = [
@@ -41,7 +43,8 @@ const typeIcon = {
   demo: CalendarCheck,
   won: Trophy,
   lost: ThumbsDown,
-  branded: Wand2
+  branded: Wand2,
+  viewed: Eye
 };
 
 const FOLLOW_OPTIONS = [
@@ -135,6 +138,15 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
     }
   }
 
+  async function copyTracked() {
+    try {
+      await navigator.clipboard.writeText(trackedLink(p));
+      showToast(`Tracked link for ${p.businessName} copied`);
+    } catch {
+      showToast('Couldn’t copy the link', 'error');
+    }
+  }
+
   async function remove() {
     if (!confirmDelete) {
       setConfirmDelete(true);
@@ -193,6 +205,13 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
           ) : null}
           <Badge tone="pine">${p.dealValue ?? 0}/mo</Badge>
           {fu ? <Badge tone={fu === 'later' ? 'neutral' : 'ember'}>{followUpLabel(p)}</Badge> : null}
+          {p.lastViewedAt ? (
+            <Badge tone={isHot(p) ? 'pine' : 'neutral'}>
+              <Eye size={11} className="mr-1" />
+              Opened demo {p.views > 1 ? `${p.views}× · ` : ''}
+              {viewedAgo(p)}
+            </Badge>
+          ) : null}
         </section>
 
         {contacts.length ? (
@@ -228,10 +247,19 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
               <p className="mt-0.5 text-[12px] leading-relaxed text-mute">
                 Loads {p.businessName}, {p.city} and {p.currencyCode} pricing into the demo, then opens your pitch scripts.
               </p>
-              <Btn variant="pine" size="sm" className="mt-3" onClick={brandDemo} disabled={busy === 'brand'}>
-                <Wand2 size={13} />
-                {busy === 'brand' ? 'Branding…' : 'Brand demo & open scripts'}
-              </Btn>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Btn variant="pine" size="sm" onClick={brandDemo} disabled={busy === 'brand'}>
+                  <Wand2 size={13} />
+                  {busy === 'brand' ? 'Branding…' : 'Brand demo & open scripts'}
+                </Btn>
+                <Btn variant="ghost" size="sm" onClick={copyTracked}>
+                  <Copy size={13} />
+                  Copy tracked link
+                </Btn>
+              </div>
+              <p className="mt-2 text-[11px] text-mute">
+                {p.lastViewedAt ? `Opened ${p.views || 1}× so far. ` : ''}Opens from this link show up in the timeline below.
+              </p>
             </div>
           </div>
         </section>
@@ -286,7 +314,7 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
           <ol className="relative space-y-4 border-l border-line pl-5">
             {p.activity.map((a) => {
               const Icon = typeIcon[a.type] || StickyNote;
-              const strong = a.type === 'won' || a.type === 'demo' || a.type === 'reply';
+              const strong = ['won', 'demo', 'reply', 'viewed'].includes(a.type);
               return (
                 <li key={a.id} className="relative">
                   <span

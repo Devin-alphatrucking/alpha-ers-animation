@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Copy, Check, Mail, Instagram, Video, MessageCircle, Send, KanbanSquare } from 'lucide-react';
+import { Copy, Check, Eye, Mail, Instagram, Video, MessageCircle, Send, KanbanSquare } from 'lucide-react';
 import { api, formatMoney } from '../api';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
@@ -99,7 +99,7 @@ export default function OutreachKit() {
   useEffect(() => {
     let live = true;
     api
-      .outreach(window.location.origin)
+      .outreach(window.location.origin, pitching?.id)
       .then((data) => {
         if (live) {
           setKit(data);
@@ -112,7 +112,7 @@ export default function OutreachKit() {
     return () => {
       live = false;
     };
-  }, [b.name, b.nicheId, b.city, b.currencyCode, b.rating]);
+  }, [b.name, b.nicheId, b.city, b.currencyCode, b.rating, b.ownerFirstName, pitching?.id]);
 
   async function copy(key, text) {
     if (!text) {
@@ -214,12 +214,24 @@ export default function OutreachKit() {
 
       <section className="grid gap-3 lg:grid-cols-12">
         <Surface className="bg-ink p-6 text-paper lg:col-span-7">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">Demo URL</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">Demo URL</p>
+            {pitching ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-[#d7e8c8]">
+                <Eye size={12} />
+                Tracked for {pitching.businessName}
+              </span>
+            ) : null}
+          </div>
           <p className="mt-2 break-all font-mono text-[12px] text-[#e8c4b0]">{kit.demoLink || demoLink}</p>
           <Btn variant="primary" className="mt-4" onClick={() => copy('link', kit.demoLink)}>
             Copy link
           </Btn>
-          <p className="mt-3 text-[12px] text-white/45">They open it and see their own shop name, city, and prices.</p>
+          <p className="mt-3 text-[12px] text-white/45">
+            {pitching
+              ? 'They see their own shop name, city, and prices. Every open shows up in their pipeline timeline.'
+              : 'They open it and see their own shop name, city, and prices. Pick a prospect above to track who opens it.'}
+          </p>
         </Surface>
 
         <Surface className="p-5 lg:col-span-5">
