@@ -15,12 +15,17 @@ import { trackAction } from '../lib/track';
 import { Btn, Count, PageShell, Surface } from '../components/ui';
 
 export default function Dashboard() {
-  const { state, owner } = useDemo();
+  const { state, owner, offer } = useDemo();
   const { business: b, metrics: m, weekly, funnel, activity } = state;
+  const planPrices = useMemo(() => {
+    const list = ['starter', 'growth', 'premium'].map((id) => offer?.plans?.[id]?.price).filter(Boolean);
+    return list.length ? list : [49, 79, 99];
+  }, [offer]);
   const [leadsPerWeek, setLeadsPerWeek] = useState(18);
   const [closeRate, setCloseRate] = useState(35);
   const [ticket, setTicket] = useState(m.avgTicket);
-  const [plan, setPlan] = useState(79);
+  const [pickedPlan, setPlan] = useState(null);
+  const plan = planPrices.includes(pickedPlan) ? pickedPlan : planPrices[Math.min(1, planPrices.length - 1)];
   const roiTracked = useRef(false);
   const touchRoi = () => {
     if (roiTracked.current) return;
@@ -198,7 +203,7 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {[49, 79, 99].map((p) => (
+            {planPrices.map((p) => (
               <button
                 key={p}
                 onClick={() => {
@@ -229,6 +234,14 @@ export default function Dashboard() {
               <p className="font-display text-[1.8rem]">{roi.paybackDays} days</p>
             </div>
           </div>
+          {!owner ? (
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Btn as={Link} to="/pricing" variant="primary">
+                See plans for {b.name}
+              </Btn>
+              <span className="text-[12px] text-white/45">Live in {offer?.setupDays || 2} days · cancel anytime</span>
+            </div>
+          ) : null}
         </Surface>
 
         <Surface className="p-5 lg:col-span-4">

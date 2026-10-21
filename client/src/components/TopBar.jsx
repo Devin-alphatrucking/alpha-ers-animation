@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Check, Link2, LogOut, RotateCcw } from 'lucide-react';
 import { api } from '../api';
 import { useDemo } from '../context/DemoContext';
@@ -12,7 +12,9 @@ const titles = {
   '/bookings': 'Bookings',
   '/reviews': 'Reviews',
   '/outreach': 'Pitch kit',
-  '/prospects': 'Pipeline'
+  '/prospects': 'Pipeline',
+  '/pricing': 'Plans',
+  '/settings': 'Offer & payments'
 };
 
 export default function TopBar() {
@@ -71,6 +73,13 @@ export default function TopBar() {
               <span className="hidden xl:inline">{copied ? 'Copied' : 'Copy link'}</span>
             </Btn>
           </>
+        ) : pathname !== '/pricing' ? (
+          <Btn as={Link} to="/pricing" variant="primary" className="max-w-[46vw] sm:max-w-none">
+            <span className="truncate">
+              <span className="sm:hidden">See plans</span>
+              <span className="hidden sm:inline">Get this for {b.name}</span>
+            </span>
+          </Btn>
         ) : null}
         <Btn variant="quiet" onClick={reset} title="Reset demo data" className="w-9 px-0">
           <RotateCcw size={14} />

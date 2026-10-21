@@ -11,6 +11,7 @@ const { niches, currencies, listNiches } = require('./data/nichePresets');
 const store = require('./data/store');
 const prospects = require('./data/prospects');
 const auth = require('./lib/auth');
+const offer = require('./data/offer');
 const { validateProspect, validateActivity, rowsFromCsv } = require('./lib/validateProspect');
 
 const app = express();
@@ -276,7 +277,112 @@ app.post('/api/track', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-app.use(['/api/prospects', '/api/outreach'], auth.requireOwner);
+app.get('/api/offer', wrap(async (_req, res) => {
+  res.json(await offer.publicOffer());
+}));
+
+app.get('/api/checkout/:plan', wrap(async (req, res) => {
+  const plan = offer.PLAN_IDS.includes(req.params.plan) ? req.params.plan : null;
+  if (!plan) return res.redirect(302, '/pricing');
+  const ref = String(req.query.ref || '');
+  const visitId = String(req.query.v || '');
+  if (/^[a-z0-9]{10}$/.test(ref) && /^[A-Za-z0-9_-]{8,40}$/.test(visitId)) {
+    await prospects.recordView(ref, visitId, {
+      type: 'action',
+      action: `checkout_${plan}`,
+      device: deviceFrom(req.get('user-agent'))
+    });
+  }
+  const link = await offer.checkoutLink(plan);
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, link || `/pricing?reserve=${plan}`);
+}));
+
+const onboardingHits = new Map();
+setInterval(() => onboardingHits.clear(), 60 * 60 * 1000).unref();
+
+function validateOnboarding(body = {}) {
+  const s = (v) => (typeof v === 'string' ? v.trim() : '');
+  const errors = {};
+  const value = {
+    plan: offer.PLAN_IDS.includes(body.plan) ? body.plan : '',
+    businessName: s(body.businessName),
+    contactName: s(body.contactName),
+    email: s(body.email).toLowerCase(),
+    phone: s(body.phone),
+    googleUrl: s(body.googleUrl),
+    notes: s(body.notes)
+  };
+  if (value.businessName.length < 2 || value.businessName.length > 60) errors.businessName = 'Enter your business name';
+  if (value.contactName.length < 2 || value.contactName.length > 50 || !/^[\p{L}][\p{L} .'-]*$/u.test(value.contactName)) {
+    errors.contactName = 'Enter your name (letters only)';
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.email) || value.email.length > 80) errors.email = 'Enter a valid email';
+  const digits = value.phone.replace(/\D/g, '');
+  if (!value.phone || digits.length < 10 || digits.length > 15 || !/^[+\d][\d\s().-]*$/.test(value.phone)) {
+    errors.phone = 'Enter a mobile number with country code';
+  }
+  if (value.googleUrl) {
+    try {
+      const u = new URL(/^https?:\/\//i.test(value.googleUrl) ? value.googleUrl : `https://${value.googleUrl}`);
+      if (!u.hostname.includes('.')) throw new Error('bad');
+      value.googleUrl = u.toString();
+    } catch {
+      errors.googleUrl = 'Paste your Google Business or Maps link';
+    }
+  }
+  if (value.notes.length > 500) errors.notes = 'Keep it under 500 characters';
+  return { ok: Object.keys(errors).length === 0, errors, value };
+}
+
+app.post('/api/onboarding', wrap(async (req, res) => {
+  const ip = req.ip || 'unknown';
+  const hits = (onboardingHits.get(ip) || 0) + 1;
+  onboardingHits.set(ip, hits);
+  if (hits > 10) return res.status(429).json({ message: 'Too many submissions. Please message us directly instead.' });
+
+  const result = validateOnboarding(req.body);
+  if (!result.ok) return res.status(422).json({ errors: result.errors });
+  const v = result.value;
+  const planName = { starter: 'Starter', growth: 'Growth', premium: 'Premium', setup: 'Done-for-you setup' }[v.plan] || 'No plan picked';
+  const summary = `Onboarding form: ${planName} · ${v.contactName} · ${v.email} · ${v.phone}${v.googleUrl ? ' · Google profile added' : ''}`;
+  const notes = [`Onboarding (${new Date().toLocaleDateString('en-CA')}): ${planName}`, v.googleUrl && `Google: ${v.googleUrl}`, v.notes && `Notes: ${v.notes}`]
+    .filter(Boolean)
+    .join('\n');
+
+  let p = await prospects.findByRef(String(req.body?.ref || ''));
+  if (!p) p = await prospects.findDuplicate({ email: v.email, businessName: v.businessName, city: '' });
+  if (!p) {
+    const biz = store.getState(req.sid).business;
+    const created = validateProspect({
+      businessName: v.businessName,
+      ownerName: v.contactName,
+      nicheId: biz.nicheId,
+      city: biz.city,
+      currencyCode: biz.currencyCode,
+      email: v.email,
+      phone: v.phone,
+      website: v.googleUrl,
+      stage: 'replied'
+    });
+    if (created.ok) p = await prospects.create(created.value);
+    else console.warn('[onboarding] Could not create prospect:', created.errors);
+  }
+  if (p) await prospects.addOnboarding(p, summary, notes);
+  res.json({ ok: true });
+}));
+
+app.use(['/api/prospects', '/api/outreach', '/api/settings'], auth.requireOwner);
+
+app.get('/api/settings', wrap(async (_req, res) => {
+  res.json(await offer.getOffer());
+}));
+
+app.put('/api/settings', wrap(async (req, res) => {
+  const result = offer.validateOffer(req.body);
+  if (!result.ok) return res.status(422).json({ errors: result.errors });
+  res.json(await offer.saveOffer(result.value));
+}));
 
 app.get('/api/niches', (_req, res) => {
   res.json({ niches: listNiches(), currencies: Object.values(currencies) });
@@ -621,7 +727,16 @@ app.get('/api/outreach', wrap(async (req, res) => {
   const demoLink = `${origin}/?biz=${encodeURIComponent(b.name)}&niche=${b.nicheId}&city=${encodeURIComponent(b.city)}&currency=${b.currencyCode}&rating=${b.rating}&owner=${encodeURIComponent(b.ownerFirstName)}${ref}`;
   const top = b.services.find((x) => x.popular) || b.services[0];
   const lostJobs = Math.max(4, Math.round(s.metrics.missedCallsSaved / 8));
-  const saveVsPodium = s.metrics.competitorMonthly - 79;
+  const o = await offer.getOffer();
+  const P = o.plans;
+  const monthlyPrices = ['starter', 'growth', 'premium'].filter((id) => P[id].enabled).map((id) => P[id].price);
+  const headline = P.growth.enabled ? P.growth.price : monthlyPrices[0] || P.growth.price;
+  const priceRange = monthlyPrices.length
+    ? `$${Math.min(...monthlyPrices)}${monthlyPrices.length > 1 ? `–$${Math.max(...monthlyPrices)}` : ''}/mo`
+    : `$${headline}/mo`;
+  const setupLine = P.setup.enabled ? ` (or $${P.setup.price} setup + $${P.setup.monthly}/mo)` : '';
+  const signature = o.founderName || 'Devin';
+  const saveVsPodium = s.metrics.competitorMonthly - headline;
 
   const instagramDm = `Hey ${b.ownerFirstName} — noticed ${b.name} is at ${b.rating}★ on Google in ${b.city}.
 
@@ -643,20 +758,20 @@ I was looking at ${b.industryPhrase} businesses in ${b.city} and ${b.name} stood
 
 The pattern I keep seeing: the owner is delivering the work, the phone rings, Instagram DMs sit for 2–6 hours, and ${b.competitorName} takes the job.
 
-PulseLocal AI is a 24/7 receptionist built for ${b.shortLabel.toLowerCase()} shops:
+${o.brandName} is a 24/7 receptionist built for ${b.shortLabel.toLowerCase()} shops:
 • Missed-call text-back in under 15 seconds
 • Instagram + website questions answered with your real prices
 • Booking + no-show reminders
 • 5-star Google funnel with a “negative review shield” so 1–3★ never go public
 
-Your competitors pay Podium ~$${s.metrics.competitorMonthly}/mo. I set this up for $${49}–$99/mo (or $299 setup + $39/mo).
+Your competitors pay Podium ~$${s.metrics.competitorMonthly}/mo. I set this up for ${priceRange}${setupLine}.
 
 Live demo branded as ${b.name}:
 ${demoLink}
 
 If you want, I’ll personalize the AI on a 10-min call this week.
 
-— Devin`;
+— ${signature}`;
 
   const loomScript = `Hook (0:00): “${b.ownerFirstName}, I built this as if ${b.name} already used it.”
 0:15 Dashboard: point at Revenue Recovered and missed calls saved.
@@ -664,7 +779,7 @@ If you want, I’ll personalize the AI on a 10-min call this week.
 1:10 Ask the AI “how much for ${top.name}?” — it quotes ${b.currency}${top.price}.
 1:40 Bookings: Complete & Request Review.
 2:00 Review funnel: 5★ goes to Google, 2★ is intercepted privately.
-2:20 Offer: $79/mo vs Podium $${s.metrics.competitorMonthly}. Pause and wait.`;
+2:20 Pricing page: $${headline}/mo vs Podium $${s.metrics.competitorMonthly}, then the Pay button. Pause and wait.`;
 
   const whatsapp = `Hi ${b.ownerFirstName}, I put ${b.name} into a live AI receptionist demo (missed calls, IG DMs, Google reviews). 60-sec look: ${demoLink}`;
 
@@ -675,11 +790,12 @@ If you want, I’ll personalize the AI on a 10-min call this week.
     loomScript,
     whatsapp,
     pricing: {
-      starter: 49,
-      growth: 79,
-      premium: 99,
-      setup: 299,
-      maintenance: 39,
+      starter: P.starter.price,
+      growth: P.growth.price,
+      premium: P.premium.price,
+      setup: P.setup.price,
+      maintenance: P.setup.monthly,
+      enabled: Object.fromEntries(offer.PLAN_IDS.map((id) => [id, P[id].enabled])),
       podium: s.metrics.competitorMonthly,
       monthlySaved: saveVsPodium,
       yearlySaved: saveVsPodium * 12

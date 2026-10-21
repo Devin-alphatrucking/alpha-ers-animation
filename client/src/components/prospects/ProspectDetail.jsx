@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   AtSign,
   CalendarCheck,
+  ClipboardCheck,
   Copy,
   Eye,
   Globe,
@@ -44,7 +45,8 @@ const typeIcon = {
   won: Trophy,
   lost: ThumbsDown,
   branded: Wand2,
-  viewed: Eye
+  viewed: Eye,
+  onboarding: ClipboardCheck
 };
 
 const FOLLOW_OPTIONS = [
@@ -319,7 +321,12 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
                 <li key={a.id} className="relative">
                   <span
                     className={`absolute -left-[31px] grid h-[21px] w-[21px] place-items-center rounded-full border ${
-                      a.type === 'won' ? 'border-moss bg-moss text-white' : strong ? 'border-pine/30 bg-[#e3ece5] text-pine' : 'border-line bg-paper text-mute'
+                      a.type === 'won'
+                        ? 'border-moss bg-moss text-white'
+                        : a.hot
+                          ? 'border-ember/40 bg-[#f6e3d8] text-ember'
+                          : strong
+                            ? 'border-pine/30 bg-[#e3ece5] text-pine' : 'border-line bg-paper text-mute'
                     }`}
                   >
                     <Icon size={11} />

@@ -7,7 +7,7 @@ let visitId = null;
 let enabled = false;
 let timer = null;
 
-const PAGE_FOR_PATH = { '/': 'overview', '/inbox': 'inbox', '/bookings': 'bookings', '/reviews': 'reviews' };
+const PAGE_FOR_PATH = { '/': 'overview', '/inbox': 'inbox', '/bookings': 'bookings', '/reviews': 'reviews', '/pricing': 'pricing' };
 
 function send(type, extra = {}) {
   if (!enabled) return;
@@ -62,4 +62,20 @@ export function trackPage(pathname) {
 
 export function trackAction(action) {
   send('action', { action });
+}
+
+export function checkoutUrl(plan) {
+  const params = new URLSearchParams();
+  const r = ref || window.sessionStorage.getItem(REF_KEY);
+  const v = visitId || window.sessionStorage.getItem(VISIT_KEY);
+  if (enabled && r && v) {
+    params.set('ref', r);
+    params.set('v', v);
+  }
+  const qs = params.toString();
+  return `/api/checkout/${plan}${qs ? `?${qs}` : ''}`;
+}
+
+export function currentRef() {
+  return window.sessionStorage.getItem(REF_KEY) || '';
 }

@@ -149,15 +149,17 @@ export default function OutreachKit() {
       .map((p) => ({ value: p.id, label: p.businessName, hint: p.city }))
   ];
 
+  const kp = kit?.pricing;
+  const maintenance = kp?.maintenance ?? 39;
   const prices = {
-    starter: { fee: 49, label: 'Starter — inbox + missed-call text-back' },
-    growth: { fee: 79, label: 'Growth — full desk + bookings + reviews' },
-    premium: { fee: 99, label: 'Premium — + monthly optimization call' },
-    setup: { fee: 299, label: 'Done-for-you setup + $39/mo' }
+    starter: { fee: kp?.starter ?? 49, label: 'Starter — inbox + missed-call text-back' },
+    growth: { fee: kp?.growth ?? 79, label: 'Growth — full desk + bookings + reviews' },
+    premium: { fee: kp?.premium ?? 99, label: 'Premium — + monthly optimization call' },
+    setup: { fee: kp?.setup ?? 299, label: `Done-for-you setup + $${maintenance}/mo` }
   };
   const fee = prices[plan].fee;
-  const podium = kit?.pricing.podium || state.metrics.competitorMonthly;
-  const yearly = (podium - (plan === 'setup' ? 39 : fee)) * 12;
+  const podium = kp?.podium || state.metrics.competitorMonthly;
+  const yearly = (podium - (plan === 'setup' ? maintenance : fee)) * 12;
 
   if (loadErr) {
     return (

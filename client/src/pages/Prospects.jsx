@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
-import { AlarmClock, AtSign, Eye, Instagram, LayoutGrid, Plus, Rows3, Search, Star, Upload, X } from 'lucide-react';
+import { AlarmClock, AtSign, Eye, Flame, Instagram, LayoutGrid, Plus, Rows3, Search, Star, Upload, X } from 'lucide-react';
 import { api, timeAgo } from '../api';
 import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
@@ -10,6 +10,7 @@ import {
   followUpLabel,
   followUpState,
   initials,
+  isBuying,
   isDue,
   isHot,
   nicheShort,
@@ -126,7 +127,8 @@ export default function Prospects() {
       replyRate: contacted ? Math.round((replied / contacted) * 100) : 0,
       due: prospects.filter(isDue),
       opened: prospects.filter((p) => p.lastViewedAt).length,
-      hot: prospects.filter(isHot).sort((a, b) => new Date(b.lastViewedAt) - new Date(a.lastViewedAt))
+      hot: prospects.filter(isHot).sort((a, b) => new Date(b.lastViewedAt) - new Date(a.lastViewedAt)),
+      buying: prospects.filter(isBuying).sort((a, b) => new Date(b.buyingSignalAt) - new Date(a.buyingSignalAt))
     };
   }, [prospects]);
 
@@ -215,6 +217,25 @@ export default function Prospects() {
           </div>
         ))}
       </Surface>
+
+      {stats.buying.length ? (
+        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/40 bg-[#f6e3d8] px-4 py-3">
+          <Flame size={15} className="text-ember" />
+          <p className="mr-1 text-[13px] font-semibold text-ink">Ready to buy:</p>
+          {stats.buying.slice(0, 5).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setOpenId(p.id)}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full border border-ember/30 bg-paper px-3 text-[12px] font-medium text-ink transition hover:border-ember"
+            >
+              {p.businessName}
+              <span className="font-mono text-[10px] text-mute">{timeAgo(p.buyingSignalAt)}</span>
+            </button>
+          ))}
+          <span className="ml-auto hidden text-[12px] text-mute lg:inline">Clicked Pay, booked a call or reserved. Reach out now.</span>
+        </div>
+      ) : null}
 
       {stats.hot.length ? (
         <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-pine/25 bg-[#e8efe9] px-4 py-3">

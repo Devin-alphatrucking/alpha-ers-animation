@@ -4,6 +4,7 @@ dist/
 *.log
 server/data/db.json
 server/data/prospects.json
+server/data/settings.json
 .env
 !.env.example
 .vscode/

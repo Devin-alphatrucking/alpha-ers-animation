@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FILE = path.join(__dirname, 'prospects.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
 function strip(doc) {
   if (!doc) return doc;
@@ -62,6 +63,17 @@ function jsonBackend() {
     },
     async replaceAll(docs) {
       write(docs);
+    },
+    async getSettings() {
+      if (!fs.existsSync(SETTINGS_FILE)) return null;
+      try {
+        return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+      } catch {
+        return null;
+      }
+    },
+    async saveSettings(settings) {
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
     }
   };
 }
@@ -125,6 +137,15 @@ function mongoBackend(uri) {
       const { prospects } = await connect();
       await prospects.deleteMany({});
       if (docs.length) await prospects.insertMany(docs.map((d) => ({ ...d })));
+    },
+    async getSettings() {
+      const { meta } = await connect();
+      const doc = await meta.findOne({ _id: 'settings' });
+      return doc ? doc.value : null;
+    },
+    async saveSettings(settings) {
+      const { meta } = await connect();
+      await meta.updateOne({ _id: 'settings' }, { $set: { value: settings, at: new Date() } }, { upsert: true });
     }
   };
 }

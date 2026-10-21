@@ -8,6 +8,9 @@ import ReviewBooster from './pages/ReviewBooster';
 import OutreachKit from './pages/OutreachKit';
 import Prospects from './pages/Prospects';
 import Login from './pages/Login';
+import Pricing from './pages/Pricing';
+import Welcome from './pages/Welcome';
+import Settings from './pages/Settings';
 
 function OwnerOnly({ children }) {
   const { owner } = useDemo();
@@ -47,8 +50,18 @@ export default function App() {
   return (
     <Routes>
       <Route path="login" element={<Login />} />
+      <Route path="welcome" element={<Welcome />} />
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
+        <Route path="pricing" element={<Pricing />} />
+        <Route
+          path="settings"
+          element={
+            <OwnerOnly>
+              <Settings />
+            </OwnerOnly>
+          }
+        />
         <Route path="inbox" element={<InboxSimulator />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="reviews" element={<ReviewBooster />} />

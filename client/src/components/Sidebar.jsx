@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom';
-import { CalendarCheck, Inbox, KanbanSquare, LayoutDashboard, Megaphone, Star } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { BadgeDollarSign, CalendarCheck, Inbox, KanbanSquare, LayoutDashboard, Megaphone, Settings2, Star } from 'lucide-react';
 import { useDemo } from '../context/DemoContext';
 import { formatMoney } from '../api';
 import { isDue, isHot } from '../lib/prospects';
@@ -15,20 +15,29 @@ export const groups = [
   },
   {
     label: 'Growth',
-    links: [{ to: '/reviews', label: 'Reviews', icon: Star }]
+    links: [
+      { to: '/reviews', label: 'Reviews', icon: Star },
+      { to: '/pricing', label: 'Plans', icon: BadgeDollarSign }
+    ]
   },
   {
     label: 'Your sales',
     ownerOnly: true,
     links: [
       { to: '/prospects', label: 'Pipeline', icon: KanbanSquare, badge: 'due' },
-      { to: '/outreach', label: 'Pitch kit', icon: Megaphone }
+      { to: '/outreach', label: 'Pitch kit', icon: Megaphone },
+      { to: '/settings', label: 'Offer', icon: Settings2 }
     ]
   }
 ];
 
 export default function Sidebar() {
-  const { state, prospects, owner } = useDemo();
+  const { state, prospects, owner, offer } = useDemo();
+  const prices = ['starter', 'growth', 'premium'].map((id) => offer?.plans?.[id]?.price).filter(Boolean);
+  const headline = offer?.plans?.growth?.price || prices[0] || 79;
+  const fromPrice = prices.length ? Math.min(...prices) : headline;
+  const yearlySaved = Math.max(0, (state.metrics.competitorMonthly - headline) * 12);
+  const days = offer?.setupDays || 2;
   const unread = state.leads.filter((l) => l.unread).length;
   const due = prospects.filter(isDue).length;
   const hot = prospects.filter(isHot).length;
@@ -88,22 +97,28 @@ export default function Sidebar() {
       </nav>
 
       {owner ? (
-        <div className="m-3 rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5">
+        <Link to="/settings" className="m-3 block rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5 transition hover:bg-white/[0.06]">
           <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Your offer</p>
           <p className="mt-1 font-display text-[1.6rem] leading-none">
-            $79<span className="font-sans text-[12px] text-white/45"> /mo</span>
+            ${headline}<span className="font-sans text-[12px] text-white/45"> /mo</span>
           </p>
           <p className="mt-1.5 text-[11px] leading-snug text-white/45">
-            Podium charges {formatMoney(state.metrics.competitorMonthly)}. Client keeps ~{formatMoney(state.metrics.monthlySavingsVsPodium * 12)}/yr.
+            Podium charges {formatMoney(state.metrics.competitorMonthly)}. Client keeps ~{formatMoney(yearlySaved)}/yr.
           </p>
-        </div>
+        </Link>
       ) : (
         <div className="m-3 rounded-[8px] border border-white/10 bg-white/[0.03] p-3.5">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Live in 48 hours</p>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">Live in {days * 24} hours</p>
           <p className="mt-1.5 text-[13px] font-medium leading-snug text-white">Want this running for {state.business.name}?</p>
           <p className="mt-1.5 text-[11px] leading-snug text-white/50">
-            From $79/mo — about {formatMoney(state.metrics.monthlySavingsVsPodium * 12)}/yr less than Podium. Reply to my message and I’ll set it up.
+            From ${fromPrice}/mo, about {formatMoney(yearlySaved)}/yr less than Podium.
           </p>
+          <Link
+            to="/pricing"
+            className="mt-3 flex h-8 items-center justify-center rounded-[6px] bg-ember text-[12px] font-semibold text-white transition hover:bg-[#b83e10]"
+          >
+            See plans
+          </Link>
         </div>
       )}
     </aside>

@@ -85,6 +85,11 @@ export function isHot(p) {
   return Date.now() - new Date(p.lastViewedAt).getTime() < HOT_HOURS * 3600000;
 }
 
+export function isBuying(p) {
+  if (!p.buyingSignalAt || !OPEN_STAGES.includes(p.stage)) return false;
+  return Date.now() - new Date(p.buyingSignalAt).getTime() < 7 * 24 * 3600000;
+}
+
 export function viewedAgo(p) {
   if (!p.lastViewedAt) return '';
   const mins = Math.max(0, Math.floor((Date.now() - new Date(p.lastViewedAt).getTime()) / 60000));

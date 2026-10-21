@@ -44,6 +44,24 @@ Locally, pipeline data lives in `server/data/prospects.json`. Online, it lives i
 
 The Pipeline and Pitch kit are owner-only. Online they need the password you set in `ADMIN_PASSWORD` (log in at `/login`). Prospects opening your demo link never see them.
 
+## Getting paid (pricing page + Razorpay / Stripe)
+
+Every demo has a **Plans** page (`/pricing`) branded for the prospect's business, with their numbers, your plans compared with Podium, a "what happens after you pay" section and an FAQ. Prospects reach it from the sidebar, the top-bar **Get this for {business}** button, or the ROI calculator.
+
+1. Log in and open **Your sales → Offer** (`/settings`). Set your prices, your name (it signs the cold emails), WhatsApp number, Calendly link and an optional Loom/YouTube walkthrough.
+2. Create a payment link for each plan:
+   - **Razorpay** (works from India, accepts international cards): Dashboard → Payment Pages or Payment Links → create one per plan. For monthly billing use Subscriptions → Plans → create a subscription link.
+   - **Stripe** (if you have an account that can take payments): Payment Links → New → recurring price.
+3. Paste each link into its plan. In Razorpay/Stripe, set the **success redirect URL** to the one shown under each plan (`https://your-app/welcome?plan=growth`). After paying, customers land on a welcome form that collects their business details.
+
+What you get in the Pipeline:
+
+- **Pay** clicks go through your server first, so a tracked prospect's timeline shows *"clicked Pay (Growth)"*, they move to **Follow up today**, and they appear in the orange **Ready to buy** strip. The same happens when they tap Book a call, WhatsApp or Reserve.
+- Plans without a payment link show **Reserve** instead: the prospect leaves their details and you send the link yourself.
+- Welcome and reserve forms are logged on the matching prospect, or added as a new prospect if they came in without a tracked link.
+
+Prices you set here are used everywhere: the pricing page, the sidebar, the ROI calculator and the Pitch kit scripts. Settings are stored in `server/data/settings.json` locally and in MongoDB online.
+
 ## Put it online (Render + MongoDB Atlas, $0/month)
 
 ### 1. Create the free database (about 5 minutes)

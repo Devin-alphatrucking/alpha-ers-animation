@@ -34,14 +34,22 @@ function freshTracking() {
   return { trackId: trackId(), views: 0, lastViewedAt: null, visits: [] };
 }
 
-const PAGE_LABELS = { overview: 'Overview', inbox: 'Inbox', bookings: 'Bookings', reviews: 'Reviews' };
+const PAGE_LABELS = { overview: 'Overview', inbox: 'Inbox', bookings: 'Bookings', reviews: 'Reviews', pricing: 'Pricing' };
 const ACTION_LABELS = {
   missed_call: 'missed-call text-back',
   instagram: 'Instagram auto-reply',
   chat: 'chatted with the AI',
   booking: 'made a booking',
   review: 'tried the review funnel',
-  roi: 'used the ROI calculator'
+  roi: 'used the ROI calculator',
+  book_call: 'clicked Book a call',
+  whatsapp: 'clicked WhatsApp',
+  email: 'clicked Email',
+  checkout_starter: 'clicked Pay (Starter)',
+  checkout_growth: 'clicked Pay (Growth)',
+  checkout_premium: 'clicked Pay (Premium)',
+  checkout_setup: 'clicked Pay (Done-for-you setup)',
+  reserve: 'asked to reserve a plan'
 };
 
 function duration(seconds) {
@@ -55,6 +63,10 @@ function visitText(v) {
   if (pages.length) parts.push(`viewed ${pages.join(', ')}`);
   if (v.actions.length) parts.push(v.actions.map((a) => ACTION_LABELS[a]).join(', '));
   return parts.join(' · ');
+}
+
+function buyingSignal(v) {
+  return v.actions.some((a) => a.startsWith('checkout_') || a === 'book_call' || a === 'whatsapp' || a === 'reserve');
 }
 
 function seed() {
@@ -420,12 +432,42 @@ async function recordView(ref, visitId, { type, page, action, device }) {
   if (ACTIONS.includes(action) && !visit.actions.includes(action)) visit.actions.push(action);
 
   const entry = p.activity.find((a) => a.visitId === visitId);
-  if (entry) entry.text = visitText(visit);
+  if (entry) {
+    entry.text = visitText(visit);
+    entry.hot = buyingSignal(visit);
+  }
+  if (buyingSignal(visit) && ['new', 'contacted', 'replied', 'demo'].includes(p.stage)) {
+    p.buyingSignalAt = nowIso;
+    const today = new Date(now);
+    today.setHours(10, 0, 0, 0);
+    if (!p.nextFollowUp || new Date(p.nextFollowUp) > today) p.nextFollowUp = today.toISOString();
+  }
   p.activity = p.activity.slice(0, 200);
   p.lastViewedAt = nowIso;
   p.updatedAt = nowIso;
   await backend.put(p);
   return true;
+}
+
+async function findByRef(ref) {
+  if (!ref || !/^[a-z0-9]{10}$/.test(ref)) return null;
+  return (await load()).find((p) => p.trackId === ref) || null;
+}
+
+async function addOnboarding(p, text, notes) {
+  const now = new Date();
+  p.activity.unshift({ id: uid('pa'), type: 'onboarding', text, at: now.toISOString(), hot: true });
+  p.activity = p.activity.slice(0, 200);
+  if (notes) p.notes = `${p.notes ? `${p.notes}\n\n` : ''}${notes}`.slice(0, 1000);
+  if (p.stage !== 'won') {
+    const today = new Date(now);
+    today.setHours(10, 0, 0, 0);
+    p.nextFollowUp = today.toISOString();
+  }
+  p.buyingSignalAt = now.toISOString();
+  p.updatedAt = now.toISOString();
+  await backend.put(p);
+  return p;
 }
 
 async function reset() {
@@ -444,6 +486,8 @@ module.exports = {
   addActivity,
   findDuplicate,
   recordView,
+  findByRef,
+  addOnboarding,
   reset,
   backend,
   PAGES,

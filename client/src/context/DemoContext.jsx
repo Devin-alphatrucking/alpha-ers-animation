@@ -22,6 +22,7 @@ export function DemoProvider({ children }) {
   }, []);
 
   const [owner, setOwner] = useState(false);
+  const [offer, setOffer] = useState(null);
   const [authEnabled, setAuthEnabled] = useState(false);
 
   const refreshProspects = useCallback(async () => {
@@ -117,8 +118,13 @@ export function DemoProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        const [meta, who] = await Promise.all([api.niches(), api.me().catch(() => ({ owner: false, authEnabled: true }))]);
+        const [meta, who, offerData] = await Promise.all([
+          api.niches(),
+          api.me().catch(() => ({ owner: false, authEnabled: true })),
+          api.offer().catch(() => null)
+        ]);
         if (cancelled) return;
+        setOffer(offerData);
         setNiches(meta.niches);
         setCurrencies(meta.currencies);
         setOwner(Boolean(who.owner));
@@ -206,6 +212,8 @@ export function DemoProvider({ children }) {
     brandForProspect,
     owner,
     authEnabled,
+    offer,
+    setOffer,
     login,
     logout
   };
