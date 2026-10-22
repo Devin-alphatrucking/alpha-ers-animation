@@ -5,6 +5,8 @@ const ACTIVITY_TYPES = ['note', 'dm', 'email', 'call', 'reply', 'demo', 'won', '
 
 const str = (v) => (v === undefined || v === null ? '' : String(v)).trim();
 const LETTERS = /^[\p{L}][\p{L} .'-]*$/u;
+const NO_CONTACT = 'Add an email, Instagram handle or phone';
+const hasContact = (d) => Boolean(str(d.email) || str(d.instagram).replace(/^@/, '') || str(d.phone));
 
 const rules = {
   businessName: (v) => {
@@ -113,9 +115,9 @@ function validateProspect(input, { partial = false } = {}) {
     if (msg) errors[k] = msg;
   });
 
-  if (!partial && !str(data.email) && !str(data.instagram)) {
-    errors.email = errors.email || 'Add an email or an Instagram handle';
-    errors.instagram = errors.instagram || 'Add an email or an Instagram handle';
+  if (!partial && !hasContact(data)) {
+    errors.email = errors.email || NO_CONTACT;
+    errors.instagram = errors.instagram || NO_CONTACT;
   }
 
   const value = {};
@@ -237,4 +239,4 @@ function rowsFromCsv(text) {
   return { error: '', items };
 }
 
-module.exports = { STAGES, ACTIVITY_TYPES, validateProspect, validateActivity, rowsFromCsv };
+module.exports = { STAGES, ACTIVITY_TYPES, NO_CONTACT, hasContact, validateProspect, validateActivity, rowsFromCsv };

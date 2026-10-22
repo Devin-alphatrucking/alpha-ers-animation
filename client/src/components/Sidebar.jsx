@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { BadgeDollarSign, CalendarCheck, Inbox, KanbanSquare, LayoutDashboard, Megaphone, Settings2, Star } from 'lucide-react';
+import { BadgeDollarSign, CalendarCheck, Inbox, KanbanSquare, LayoutDashboard, Megaphone, SearchCheck, Settings2, Star } from 'lucide-react';
 import { useDemo } from '../context/DemoContext';
 import { formatMoney } from '../api';
 import { isDue, isHot } from '../lib/prospects';
@@ -24,6 +24,7 @@ export const groups = [
     label: 'Your sales',
     ownerOnly: true,
     links: [
+      { to: '/leads', label: 'Find leads', icon: SearchCheck },
       { to: '/prospects', label: 'Pipeline', icon: KanbanSquare, badge: 'due' },
       { to: '/outreach', label: 'Pitch kit', icon: Megaphone },
       { to: '/settings', label: 'Offer', icon: Settings2 }

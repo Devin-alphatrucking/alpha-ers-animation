@@ -1,5 +1,6 @@
 const LETTERS = /^[\p{L}][\p{L} .'-]*$/u;
 const trim = (v) => String(v ?? '').trim();
+export const NO_CONTACT = 'Add an email, Instagram handle or phone';
 
 export function businessName(v) {
   const s = trim(v);
@@ -130,9 +131,9 @@ export function prospect(f) {
     dealValue: dealValue(f.dealValue),
     notes: trim(f.notes).length > 1000 ? 'Notes are too long (1000 max)' : ''
   };
-  if (!trim(f.email) && !trim(f.instagram).replace(/^@/, '')) {
-    errors.email = errors.email || 'Add an email or an Instagram handle';
-    errors.instagram = errors.instagram || 'Add an email or an Instagram handle';
+  if (!trim(f.email) && !trim(f.instagram).replace(/^@/, '') && !trim(f.phone)) {
+    errors.email = errors.email || NO_CONTACT;
+    errors.instagram = errors.instagram || NO_CONTACT;
   }
   return collect(errors);
 }

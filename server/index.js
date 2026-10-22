@@ -12,7 +12,9 @@ const store = require('./data/store');
 const prospects = require('./data/prospects');
 const auth = require('./lib/auth');
 const offer = require('./data/offer');
-const { validateProspect, validateActivity, rowsFromCsv } = require('./lib/validateProspect');
+const { validateProspect, validateActivity, rowsFromCsv, hasContact, NO_CONTACT } = require('./lib/validateProspect');
+const places = require('./lib/places');
+const { enrichMany } = require('./lib/enrich');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -372,7 +374,115 @@ app.post('/api/onboarding', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-app.use(['/api/prospects', '/api/outreach', '/api/settings'], auth.requireOwner);
+app.use(['/api/prospects', '/api/outreach', '/api/settings', '/api/leads'], auth.requireOwner);
+
+app.get('/api/leads/status', (_req, res) => {
+  res.json({ live: places.isLive() });
+});
+
+app.post('/api/leads/search', wrap(async (req, res) => {
+  const check = places.validateSearch(req.body);
+  if (!check.ok) return res.status(422).json({ errors: check.errors });
+  let result;
+  try {
+    result = await places.search(check.value);
+  } catch (err) {
+    return res.status(err.status || 502).json({ message: `Google search failed: ${err.message}` });
+  }
+  const pool = await prospects.list();
+  const leads = await Promise.all(
+    result.leads.map(async (lead) => {
+      const dup = await prospects.findDuplicate(lead, null, pool);
+      return { ...lead, inPipeline: dup ? { id: dup.id, stage: dup.stage } : null };
+    })
+  );
+  res.json({ ...result, leads });
+}));
+
+const PHONE_OK = /^[+\d][\d\s().-]*$/;
+
+app.post('/api/leads/import', wrap(async (req, res) => {
+  const input = Array.isArray(req.body?.leads) ? req.body.leads : [];
+  const nicheId = String(req.body?.nicheId || '');
+  if (!input.length) return res.status(422).json({ message: 'Select at least one business' });
+  if (input.length > 60) return res.status(422).json({ message: 'Import up to 60 businesses at a time' });
+
+  const existing = await prospects.list();
+  const skipped = [];
+  const fresh = [];
+  for (const raw of input) {
+    const s = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+    const placeId = s(raw?.placeId, 300);
+    const phone = s(raw?.phone, 24);
+    const digits = phone.replace(/\D/g, '');
+    const lead = {
+      placeId: /^[A-Za-z0-9_-]+$/.test(placeId) ? placeId : '',
+      businessName: s(raw?.businessName, 60),
+      city: places.cleanCity(raw?.city),
+      country: s(raw?.country, 40),
+      currencyCode: s(raw?.currencyCode, 3),
+      phone: PHONE_OK.test(phone) && digits.length >= 10 && digits.length <= 15 ? phone : '',
+      website: s(raw?.website, 300),
+      mapsUrl: /^https:\/\/(maps\.google\.com|www\.google\.com\/maps|maps\.app\.goo\.gl)\//.test(s(raw?.mapsUrl, 500)) ? s(raw.mapsUrl, 500) : '',
+      address: s(raw?.address, 160),
+      rating: typeof raw?.rating === 'number' ? raw.rating : null,
+      reviewCount: Number.isInteger(raw?.reviewCount) && raw.reviewCount >= 0 ? raw.reviewCount : 0
+    };
+    lead.sample = lead.placeId.startsWith('sample_');
+    const pool = [...existing, ...fresh];
+    if (await prospects.findDuplicate(lead, null, pool)) {
+      skipped.push({ businessName: lead.businessName, reason: 'Already in your pipeline' });
+      continue;
+    }
+    fresh.push(lead);
+  }
+
+  const found = req.body?.enrich ? await enrichMany(fresh) : fresh.map(() => ({ email: '', instagram: '' }));
+  const valid = [];
+  fresh.forEach((lead, i) => {
+    const { score, reasons } = places.score(lead);
+    const facts = [
+      lead.rating !== null ? `${lead.rating.toFixed(1)}★ (${lead.reviewCount} reviews)` : 'No rating yet',
+      lead.website ? '' : 'no website',
+      lead.address
+    ].filter(Boolean);
+    const result = validateProspect({
+      businessName: lead.businessName,
+      nicheId,
+      city: lead.city,
+      country: lead.country,
+      currencyCode: lead.currencyCode,
+      phone: lead.phone,
+      website: lead.website,
+      email: found[i].email,
+      instagram: found[i].instagram,
+      rating: lead.rating,
+      stage: 'new',
+      notes: `Google Maps: ${facts.join(' · ')}${reasons.length ? `\nPitch angle: ${reasons.join(', ')}` : ''}`
+    });
+    if (!result.ok) {
+      skipped.push({ businessName: lead.businessName, reason: Object.values(result.errors)[0] });
+      return;
+    }
+    valid.push({
+      ...result.value,
+      placeId: lead.placeId,
+      mapsUrl: lead.mapsUrl,
+      reviewCount: lead.reviewCount,
+      leadScore: score,
+      source: 'Google Maps'
+    });
+  });
+
+  const created = valid.length ? await prospects.createMany(valid, { note: 'Found with Lead finder (Google Maps)' }) : [];
+  res.json({
+    imported: created.length,
+    withEmail: created.filter((p) => p.email).length,
+    withInstagram: created.filter((p) => p.instagram).length,
+    skipped,
+    prospects: await prospects.list()
+  });
+}));
 
 app.get('/api/settings', wrap(async (_req, res) => {
   res.json(await offer.getOffer());
@@ -821,12 +931,12 @@ app.post('/api/prospects', wrap(async (req, res) => {
 app.patch('/api/prospects/:id', wrap(async (req, res) => {
   const result = validateProspect(req.body, { partial: true });
   if (!result.ok) return res.status(422).json({ errors: result.errors });
-  if (result.value.businessName || result.value.email || result.value.instagram) {
+  if (['businessName', 'email', 'instagram', 'phone'].some((k) => k in result.value)) {
     const current = await prospects.get(req.params.id);
     if (!current) return res.status(404).json({ message: 'Prospect not found' });
     const merged = { ...current, ...result.value };
-    if (!merged.email && !merged.instagram) {
-      return res.status(422).json({ errors: { email: 'Add an email or an Instagram handle' } });
+    if (!hasContact(merged)) {
+      return res.status(422).json({ errors: { email: NO_CONTACT } });
     }
     const dup = await prospects.findDuplicate(merged, req.params.id);
     if (dup) return res.status(409).json({ errors: { businessName: `Duplicate of “${dup.businessName}” (${dup.city})` } });

@@ -14,6 +14,7 @@ const titles = {
   '/outreach': 'Pitch kit',
   '/prospects': 'Pipeline',
   '/pricing': 'Plans',
+  '/leads': 'Lead finder',
   '/settings': 'Offer & payments'
 };
 

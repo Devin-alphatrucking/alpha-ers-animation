@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import Welcome from './pages/Welcome';
 import Settings from './pages/Settings';
+import Leads from './pages/Leads';
 
 function OwnerOnly({ children }) {
   const { owner } = useDemo();
@@ -54,6 +55,14 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="pricing" element={<Pricing />} />
+        <Route
+          path="leads"
+          element={
+            <OwnerOnly>
+              <Leads />
+            </OwnerOnly>
+          }
+        />
         <Route
           path="settings"
           element={

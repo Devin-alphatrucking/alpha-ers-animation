@@ -284,10 +284,13 @@ async function findDuplicate(value, exceptId, pool) {
   const email = (value.email || '').toLowerCase();
   const ig = (value.instagram || '').toLowerCase();
   const nameKey = `${(value.businessName || '').toLowerCase()}|${(value.city || '').toLowerCase()}`;
+  const phone = (value.phone || '').replace(/\D/g, '').slice(-10);
   return (pool || (await load())).find((p) => {
     if (p.id === exceptId) return false;
+    if (value.placeId && p.placeId === value.placeId) return true;
     if (email && p.email && p.email.toLowerCase() === email) return true;
     if (ig && p.instagram && p.instagram.toLowerCase() === ig) return true;
+    if (phone.length === 10 && p.phone && p.phone.replace(/\D/g, '').slice(-10) === phone) return true;
     return `${p.businessName.toLowerCase()}|${p.city.toLowerCase()}` === nameKey;
   });
 }
@@ -319,7 +322,7 @@ async function create(value) {
   return prospect;
 }
 
-async function createMany(values) {
+async function createMany(values, { note = 'Imported from CSV' } = {}) {
   const now = new Date().toISOString();
   await load();
   const created = values.map((value) => ({
@@ -338,7 +341,7 @@ async function createMany(values) {
     ...value,
     dealValue: value.dealValue ?? 79,
     ...freshTracking(),
-    activity: [{ id: uid('pa'), type: 'note', text: 'Imported from CSV', at: now }],
+    activity: [{ id: uid('pa'), type: 'note', text: note, at: now }],
     createdAt: now,
     updatedAt: now
   }));

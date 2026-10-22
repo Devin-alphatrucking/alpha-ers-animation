@@ -34,7 +34,7 @@ Or use the prospect switcher in the top bar → Apply & copy link.
 
 Open **Your sales → Pipeline** (`/prospects`) to track every business you pitch.
 
-- Add prospects one by one, or **Import CSV** (columns: `business, owner, niche, city, country, email, instagram, phone, website, rating, notes`; up to 500 rows, duplicates skipped).
+- Find businesses with the **Lead finder** (below), add them one by one, or **Import CSV** (columns: `business, owner, niche, city, country, email, instagram, phone, website, rating, notes`; up to 500 rows, duplicates skipped).
 - Drag cards between stages: New → Contacted → Replied → Demo booked → Won / Lost.
 - Open a card → **Brand demo & open scripts** loads that business into the demo and opens the Pitch kit with their name pre-filled.
 - Log DMs, emails, replies, and demos in one click; follow-ups due today show in the sidebar badge.
@@ -43,6 +43,24 @@ Open **Your sales → Pipeline** (`/prospects`) to track every business you pitc
 Locally, pipeline data lives in `server/data/prospects.json`. Online, it lives in MongoDB. The demo reset never touches it.
 
 The Pipeline and Pitch kit are owner-only. Online they need the password you set in `ADMIN_PASSWORD` (log in at `/login`). Prospects opening your demo link never see them.
+
+## Lead finder (Google Maps)
+
+Open **Your sales → Find leads** (`/leads`). Pick an industry and a city, and it lists local businesses from Google Maps, scored by how much they need this:
+
+- **Hot** if they have no website, a rating under 4.5, or only a few reviews. Those are the easiest pitches, and the reason shows under each score.
+- Filter by *No website*, *Rating under 4.5*, *Under 50 reviews*; sort by opportunity, rating or review count; load up to 60 per search.
+- Tick the ones you want, then **Add to Pipeline**. With *Find emails & Instagram from their websites* on, it reads each business's homepage and contact page and fills in the email and Instagram handle it finds.
+- Each new prospect gets their phone, website, Google Maps link and a note like *"Google Maps: 4.1★ (37 reviews) · no website · Pitch angle: No website, Rating 4.1 could be higher"*. Businesses already in your Pipeline are marked and skipped.
+
+Without a key it shows **sample businesses** so you can try the flow. To search real listings:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/), create a project and turn on billing (Google gives a monthly free allowance for Places; check current pricing on their site).
+2. APIs & Services → Library → enable **Places API (New)**.
+3. APIs & Services → Credentials → **Create credentials → API key**. Restrict it to *Places API (New)*.
+4. Put it in `server/.env` as `GOOGLE_PLACES_API_KEY=...` (and in Render → Environment when online), then restart the server.
+
+Searches are cached for 24 hours, so repeating the same city doesn't cost anything extra.
 
 ## Getting paid (pricing page + Razorpay / Stripe)
 

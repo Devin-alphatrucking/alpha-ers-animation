@@ -9,6 +9,7 @@ import {
   Globe,
   Instagram,
   Mail,
+  MapPin,
   MessageCircle,
   Pencil,
   Phone,
@@ -171,7 +172,8 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
     p.email && { icon: AtSign, label: p.email, href: `mailto:${p.email}` },
     p.instagram && { icon: Instagram, label: `@${p.instagram}`, href: `https://instagram.com/${p.instagram}` },
     p.phone && { icon: Phone, label: p.phone, href: `https://wa.me/${p.phone.replace(/\D/g, '')}` },
-    p.website && { icon: Globe, label: p.website.replace(/^https?:\/\//, ''), href: p.website }
+    p.website && { icon: Globe, label: p.website.replace(/^https?:\/\//, ''), href: p.website },
+    p.mapsUrl && { icon: MapPin, label: `Google Maps${p.reviewCount ? ` · ${p.reviewCount} reviews` : ''}`, href: p.mapsUrl }
   ].filter(Boolean);
 
   return (

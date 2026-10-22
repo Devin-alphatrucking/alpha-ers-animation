@@ -59,13 +59,14 @@ export default function ProspectForm({ open, onClose, prospect, onSaved }) {
       }
       return next;
     });
-    if (errors[key] || ((key === 'email' || key === 'instagram') && (errors.email || errors.instagram))) {
+    const contactKey = key === 'email' || key === 'instagram' || key === 'phone';
+    if (errors[key] || (contactKey && (errors.email || errors.instagram))) {
       setErrors((e) => {
         const n = { ...e };
         delete n[key];
-        if (key === 'email' || key === 'instagram') {
-          if (n.email === 'Add an email or an Instagram handle') delete n.email;
-          if (n.instagram === 'Add an email or an Instagram handle') delete n.instagram;
+        if (contactKey) {
+          if (n.email === v.NO_CONTACT) delete n.email;
+          if (n.instagram === v.NO_CONTACT) delete n.instagram;
         }
         return n;
       });
