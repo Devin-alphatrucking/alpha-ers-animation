@@ -9,7 +9,6 @@ import {
   STAGES,
   followUpLabel,
   followUpState,
-  initials,
   isBuying,
   isDue,
   isHot,
@@ -17,6 +16,7 @@ import {
   stageLabel,
   viewedAgo
 } from '../lib/prospects';
+import { Avatar } from '../components/Brand';
 import { Badge, Btn, Count, PageShell, Segmented, Select, Surface } from '../components/ui';
 import ProspectForm from '../components/prospects/ProspectForm';
 import ProspectDetail from '../components/prospects/ProspectDetail';
@@ -28,7 +28,7 @@ function FollowChip({ p }) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-        s === 'later' ? 'bg-canvas text-mute' : s === 'today' ? 'bg-[#f6e3d8] text-ember' : 'bg-ember text-white'
+        s === 'later' ? 'bg-ink/[0.04] text-mute' : s === 'today' ? 'bg-emberSoft text-emberDeep' : 'bg-emberSoft text-emberDeep ring-1 ring-inset ring-ember/30'
       }`}
     >
       <AlarmClock size={11} />
@@ -44,7 +44,7 @@ function ViewedChip({ p }) {
     <span
       title={`Opened your demo ${p.views || 1}×`}
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-        hot ? 'bg-[#e3ece5] text-pine' : 'bg-canvas text-mute'
+        hot ? 'bg-pineSoft text-pine' : 'bg-canvas text-mute'
       }`}
     >
       {hot ? <span className="h-1.5 w-1.5 rounded-full bg-moss live-dot" /> : <Eye size={11} />}
@@ -63,14 +63,12 @@ function Card({ p, onOpen, onDragStart, dragging }) {
       data-card
       onDragStart={(e) => onDragStart(e, p)}
       onClick={() => onOpen(p.id)}
-      className={`group w-full rounded-[7px] border bg-paper p-3 text-left shadow-[0_1px_0_rgba(23,21,15,0.04)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_20px_rgba(23,21,15,0.08)] ${
-        overdue ? 'border-ember/40' : 'border-line hover:border-[#c9bfac]'
+      className={`group w-full rounded-[10px] border border-line bg-paper p-3 text-left shadow-card transition hover:-translate-y-[1px] hover:border-lineStrong hover:shadow-lift ${
+        overdue ? 'border-l-2 border-l-ember' : ''
       } ${dragging ? 'opacity-40' : ''}`}
     >
       <div className="flex items-start gap-2.5">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-canvas font-mono text-[11px] font-semibold text-ink/70">
-          {initials(p.businessName)}
-        </span>
+        <Avatar name={p.businessName} size={32} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold leading-tight text-ink">{p.businessName}</p>
           <p className="mt-0.5 truncate text-[12px] text-mute">
@@ -219,7 +217,7 @@ export default function Prospects() {
       </Surface>
 
       {stats.buying.length ? (
-        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/40 bg-[#f6e3d8] px-4 py-3">
+        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/40 bg-emberSoft px-4 py-3">
           <Flame size={15} className="text-ember" />
           <p className="mr-1 text-[13px] font-semibold text-ink">Ready to buy:</p>
           {stats.buying.slice(0, 5).map((p) => (
@@ -238,7 +236,7 @@ export default function Prospects() {
       ) : null}
 
       {stats.hot.length ? (
-        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-pine/25 bg-[#e8efe9] px-4 py-3">
+        <div data-reveal className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-pine/25 bg-pineSoft px-4 py-3">
           <Eye size={15} className="text-pine" />
           <p className="mr-1 text-[13px] font-semibold text-ink">Just opened your demo:</p>
           {stats.hot.slice(0, 5).map((p) => (
@@ -258,7 +256,7 @@ export default function Prospects() {
       ) : null}
 
       {stats.due.length ? (
-        <div data-reveal className="mb-5 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/25 bg-[#fbf1ea] px-4 py-3">
+        <div data-reveal className="mb-5 flex flex-wrap items-center gap-2 rounded-[8px] border border-ember/25 bg-emberSoft px-4 py-3">
           <AlarmClock size={15} className="text-ember" />
           <p className="mr-1 text-[13px] font-semibold text-ink">Follow up today:</p>
           {stats.due.slice(0, 5).map((p) => (
@@ -288,7 +286,7 @@ export default function Prospects() {
             maxLength={60}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search business, city, owner, @handle"
-            className="h-9 w-full rounded-[6px] border border-line bg-paper pl-8 pr-8 text-[13px] text-ink outline-none transition placeholder:text-mute/60 hover:border-[#c9bfac] focus:border-pine focus:ring-2 focus:ring-pine/15"
+            className="h-9 w-full rounded-[6px] border border-line bg-paper pl-8 pr-8 text-[13px] text-ink outline-none transition placeholder:text-mute/60 hover:border-lineStrong focus:border-pine focus:ring-2 focus:ring-pine/15"
           />
           {query ? (
             <button type="button" aria-label="Clear search" onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-mute hover:text-ink">
@@ -303,7 +301,7 @@ export default function Prospects() {
           type="button"
           onClick={() => setDueOnly((d) => !d)}
           className={`inline-flex h-9 items-center gap-1.5 rounded-[6px] border px-3 text-[12px] font-medium transition ${
-            dueOnly ? 'border-ember bg-ember text-white' : 'border-line bg-paper text-ink hover:border-[#c9bfac]'
+            dueOnly ? 'border-ember bg-ember text-white' : 'border-line bg-paper text-ink hover:border-lineStrong'
           }`}
         >
           <AlarmClock size={13} />
@@ -381,7 +379,7 @@ export default function Prospects() {
                     moveTo(e.dataTransfer.getData('text/plain'), stage.id);
                   }}
                   className={`flex w-[244px] shrink-0 flex-col rounded-[9px] border p-2 transition ${
-                    over ? 'border-pine/50 bg-[#e3ece5]' : 'border-transparent bg-[#E5DFD1]/60'
+                    over ? 'border-pine/50 bg-pineSoft' : 'border-transparent bg-ink/[0.03]'
                   }`}
                 >
                   <header className="flex items-center gap-2 px-1.5 pb-2 pt-1">

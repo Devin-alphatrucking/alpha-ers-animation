@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Store, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
+import { Avatar } from './Brand';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
 import { gsap } from '../lib/motion';
@@ -103,13 +104,11 @@ export default function ProspectSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-9 max-w-[280px] items-center gap-2.5 rounded-[6px] border bg-paper pl-1.5 pr-2.5 text-left transition ${
-          open ? 'border-pine ring-2 ring-pine/15' : 'border-line hover:border-[#c9bfac]'
+        className={`flex h-9 max-w-[280px] items-center gap-2.5 rounded-[8px] border bg-paper pl-1.5 pr-2.5 text-left shadow-card transition ${
+          open ? 'border-ink/40 ring-4 ring-ink/[0.06]' : 'border-line hover:border-lineStrong'
         }`}
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-[4px] bg-pine text-white">
-          <Store size={13} />
-        </span>
+        <Avatar name={b.name} size={24} />
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-[12.5px] font-semibold text-ink">{b.name}</span>
           <span className="block truncate text-[10.5px] text-mute">
@@ -122,7 +121,7 @@ export default function ProspectSwitcher() {
       {open ? (
         <div
           ref={panel}
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[400px] max-w-[calc(100vw-2rem)] rounded-[10px] border border-line bg-paper shadow-[0_24px_60px_rgba(23,21,15,0.18)]"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[400px] max-w-[calc(100vw-2rem)] rounded-[14px] border border-line bg-paper shadow-pop"
         >
           <div className="flex items-start justify-between border-b border-line px-5 py-4">
             <div>

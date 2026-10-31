@@ -241,7 +241,7 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
           </p>
         ) : null}
 
-        <section data-stagger className="rounded-[8px] border border-pine/20 bg-[#e8efe9] p-4">
+        <section data-stagger className="rounded-[8px] border border-pine/20 bg-pineSoft p-4">
           <div className="flex items-start gap-3">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] bg-pine text-white">
               <Sparkles size={16} />
@@ -280,7 +280,7 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
                   type="button"
                   onClick={() => pick(q)}
                   className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition ${
-                    on ? 'border-ink bg-ink text-paper' : 'border-line bg-paper text-ink hover:border-[#c9bfac] hover:bg-canvas'
+                    on ? 'border-ink bg-ink text-paper' : 'border-line bg-paper text-ink hover:border-lineStrong hover:bg-canvas'
                   }`}
                 >
                   <q.icon size={13} />
@@ -326,9 +326,9 @@ export default function ProspectDetail({ prospect, onClose, onEdit }) {
                       a.type === 'won'
                         ? 'border-moss bg-moss text-white'
                         : a.hot
-                          ? 'border-ember/40 bg-[#f6e3d8] text-ember'
+                          ? 'border-ember/40 bg-emberSoft text-ember'
                           : strong
-                            ? 'border-pine/30 bg-[#e3ece5] text-pine' : 'border-line bg-paper text-mute'
+                            ? 'border-pine/30 bg-pineSoft text-pine' : 'border-line bg-paper text-mute'
                     }`}
                   >
                     <Icon size={11} />

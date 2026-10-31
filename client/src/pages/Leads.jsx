@@ -191,7 +191,7 @@ export default function Leads() {
       subtitle="Search Google Maps for local businesses that need this most (weak ratings, few reviews, no website) and add them to your Pipeline in one click."
     >
       {live === false ? (
-        <div data-reveal className="mb-4 rounded-[8px] border border-[#ecd2c2] bg-[#fbefe7] px-4 py-3 text-[13px]">
+        <div data-reveal className="mb-4 rounded-[8px] border border-ember/25 bg-emberSoft px-4 py-3 text-[13px]">
           <span className="font-semibold text-ink">Showing sample businesses.</span>{' '}
           <span className="text-mute">
             Add <code className="rounded bg-paper px-1 font-mono text-[12px]">GOOGLE_PLACES_API_KEY</code> to your server
@@ -243,7 +243,7 @@ export default function Leads() {
                 onClick={() => setFilters((x) => ({ ...x, [f.id]: !x[f.id] }))}
                 aria-pressed={Boolean(filters[f.id])}
                 className={`h-7 rounded-full border px-3 text-[12px] font-medium transition ${
-                  filters[f.id] ? 'border-pine bg-[#e3ece5] text-pine' : 'border-line bg-paper text-mute hover:text-ink'
+                  filters[f.id] ? 'border-pine bg-pineSoft text-pine' : 'border-line bg-paper text-mute hover:text-ink'
                 }`}
               >
                 {f.label}
@@ -259,7 +259,7 @@ export default function Leads() {
               <thead className="bg-canvas/60 text-[11px] uppercase tracking-[0.1em] text-mute">
                 <tr>
                   <th className="w-10 px-4 py-2.5">
-                    <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" className="accent-[#1C4A3E]" />
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" className="accent-ink" />
                   </th>
                   <th className="px-2 py-2.5 font-semibold">Business</th>
                   <th className="px-2 py-2.5 font-semibold">Google</th>
@@ -276,7 +276,7 @@ export default function Leads() {
                     <tr
                       key={l.placeId}
                       onClick={() => !l.inPipeline && toggle(l.placeId)}
-                      className={`transition ${l.inPipeline ? 'opacity-60' : 'cursor-pointer hover:bg-canvas/50'} ${on ? 'bg-[#eef5ef]' : ''}`}
+                      className={`transition ${l.inPipeline ? 'opacity-60' : 'cursor-pointer hover:bg-canvas/50'} ${on ? 'bg-pineSoft' : ''}`}
                     >
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -285,7 +285,7 @@ export default function Leads() {
                           disabled={Boolean(l.inPipeline)}
                           onChange={() => toggle(l.placeId)}
                           aria-label={`Select ${l.businessName}`}
-                          className="accent-[#1C4A3E]"
+                          className="accent-ink"
                         />
                       </td>
                       <td className="max-w-[280px] px-2 py-3">
@@ -298,7 +298,7 @@ export default function Leads() {
                       <td className="whitespace-nowrap px-2 py-3">
                         {l.rating !== null ? (
                           <span className="inline-flex items-center gap-1">
-                            <Star size={12} className="fill-[#E8B04B] text-[#E8B04B]" />
+                            <Star size={12} className="fill-gold text-gold" />
                             <span className="font-semibold tabular-nums">{l.rating.toFixed(1)}</span>
                             <span className="text-[12px] text-mute">({l.reviewCount})</span>
                           </span>
@@ -386,7 +386,7 @@ export default function Leads() {
         <div className="sticky bottom-3 z-20 mt-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-ink px-4 py-3 text-paper shadow-[0_18px_44px_rgba(23,21,15,0.25)]">
           <p className="text-[13px] font-semibold">{selected.size} selected</p>
           <label className="flex cursor-pointer items-center gap-2 text-[12px] text-white/70">
-            <input type="checkbox" checked={enrich} onChange={(e) => setEnrich(e.target.checked)} className="accent-[#D04A17]" />
+            <input type="checkbox" checked={enrich} onChange={(e) => setEnrich(e.target.checked)} className="accent-ember" />
             Find emails & Instagram from their websites
           </label>
           <div className="ml-auto flex gap-2">

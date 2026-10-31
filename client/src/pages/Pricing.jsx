@@ -89,7 +89,7 @@ export default function Pricing() {
       subtitle={`In this demo the desk saved ${m.missedCallsSaved} missed calls and recovered ${formatMoney(m.revenueRecovered, b.currency)} in a month. Podium charges about $${m.competitorMonthly}/mo for less.`}
     >
       {owner && missingLinks.length ? (
-        <div data-reveal className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#ecd2c2] bg-[#fbefe7] px-4 py-3">
+        <div data-reveal className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-ember/25 bg-emberSoft px-4 py-3">
           <p className="text-[13px] text-ink">
             <span className="font-semibold">No payment link yet for {missingLinks.join(', ')}.</span>{' '}
             <span className="text-mute">Prospects will see “Reserve” and send you their details instead.</span>
@@ -150,7 +150,7 @@ export default function Pricing() {
       {plans.setup ? (
         <Surface className="mt-3 grid gap-5 bg-ink p-6 text-paper md:grid-cols-[1fr_auto] md:items-center">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">Done for you</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Done for you</p>
             <h2 className="mt-1 font-display text-[1.5rem] text-paper">
               ${plans.setup.price} once, then ${plans.setup.monthly}/mo
             </h2>

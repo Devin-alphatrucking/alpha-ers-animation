@@ -217,15 +217,15 @@ export default function OutreachKit() {
       <section className="grid gap-3 lg:grid-cols-12">
         <Surface className="bg-ink p-6 text-paper lg:col-span-7">
           <div className="flex items-center justify-between gap-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">Demo URL</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Demo URL</p>
             {pitching ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-[#d7e8c8]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/55">
                 <Eye size={12} />
                 Tracked for {pitching.businessName}
               </span>
             ) : null}
           </div>
-          <p className="mt-2 break-all font-mono text-[12px] text-[#e8c4b0]">{kit.demoLink || demoLink}</p>
+          <p className="mt-2 break-all font-mono text-[12px] text-emberTint">{kit.demoLink || demoLink}</p>
           <Btn variant="primary" className="mt-4" onClick={() => copy('link', kit.demoLink)}>
             Copy link
           </Btn>

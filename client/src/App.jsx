@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useDemo } from './context/DemoContext';
 import Layout from './components/Layout';
+import { LogoMark } from './components/Brand';
 import Dashboard from './pages/Dashboard';
 import InboxSimulator from './pages/InboxSimulator';
 import Bookings from './pages/Bookings';
@@ -25,10 +26,12 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#132822] text-[#f4efe4]">
-        <div className="text-center">
-          <p className="font-display text-3xl">PulseLocal</p>
-          <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#d7e8c8]">Opening the desk</p>
+      <div className="flex min-h-screen items-center justify-center bg-canvas">
+        <div className="flex flex-col items-center">
+          <span className="animate-pulse">
+            <LogoMark size={40} />
+          </span>
+          <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-mute">Opening the desk</p>
         </div>
       </div>
     );

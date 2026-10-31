@@ -6,6 +6,7 @@ import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
 import { currentRef } from '../lib/track';
 import OnboardingForm from '../components/OnboardingForm';
+import { LogoMark } from '../components/Brand';
 
 export default function Welcome() {
   const { offer, state } = useDemo();
@@ -26,19 +27,20 @@ export default function Welcome() {
   }, [brand]);
 
   return (
-    <div className="min-h-[100dvh] bg-[#132822] px-4 py-10 md:py-16">
-      <div ref={card} className="mx-auto w-full max-w-[560px]">
-        <div className="mb-6 flex items-center gap-2.5 text-[#f4efe4]">
-          <span className="grid h-8 w-8 place-items-center rounded-[6px] bg-ember font-display text-[16px] text-white">
-            {brand.charAt(0)}
-          </span>
-          <p className="font-display text-[1.15rem]">{brand}</p>
+    <div className="relative min-h-[100dvh] bg-canvas px-4 py-10 md:py-16">
+      <div className="dot-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
+      <div ref={card} className="relative mx-auto w-full max-w-[560px]">
+        <div className="mb-6 flex items-center gap-2.5">
+          <LogoMark />
+          <p className="text-[15px] font-semibold tracking-[-0.02em] text-ink">{brand}</p>
         </div>
-        <div className="rounded-[10px] border border-line bg-paper p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] md:p-8">
+        <div className="rounded-[14px] border border-line bg-paper p-6 shadow-lift md:p-8">
           <div className="mb-6 flex items-start gap-3">
-            <CheckCircle2 size={22} className="mt-1 shrink-0 text-moss" />
+            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-pineSoft text-pine">
+              <CheckCircle2 size={18} />
+            </span>
             <div>
-              <h1 className="font-display text-[1.7rem] leading-tight text-ink">You're in. Let's set it up.</h1>
+              <h1 className="font-display text-[1.6rem] leading-tight text-ink">You're in. Let's set it up.</h1>
               <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
                 Thanks for your payment. Two minutes here and we can have your desk live in about {offer?.setupDays || 2} days.
               </p>
@@ -51,7 +53,7 @@ export default function Welcome() {
             submitLabel="Start my setup"
           />
         </div>
-        <p className="mt-5 text-center text-[12px] text-white/45">
+        <p className="mt-5 text-center text-[12px] text-mute">
           Questions? {offer?.contactEmail ? <a href={`mailto:${offer.contactEmail}`} className="underline">{offer.contactEmail}</a> : 'Reply to your payment receipt.'}
         </p>
       </div>

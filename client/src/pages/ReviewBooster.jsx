@@ -89,21 +89,22 @@ export default function ReviewBooster() {
         </Btn>
       }
     >
-      <section className="mb-3 grid gap-3 sm:grid-cols-4">
+      <Surface className="mb-3 grid grid-cols-2 overflow-hidden sm:grid-cols-4">
         {[
-          ['Requests sent', c.sent],
-          ['Opened', c.opened],
-          ['5★ Google clicks', c.fiveStarClicks],
-          ['Intercepted 1–3★', c.intercepted]
-        ].map(([label, value]) => (
-          <Surface key={label} className="p-4">
-            <p className="text-[12px] text-mute">{label}</p>
-            <p className="mt-2 font-display text-[2rem] leading-none">
+          ['Requests sent', c.sent, null],
+          ['Opened', c.opened, c.sent],
+          ['5★ Google clicks', c.fiveStarClicks, c.opened],
+          ['Intercepted 1–3★', c.intercepted, c.opened]
+        ].map(([label, value, of], i) => (
+          <div key={label} className={`p-5 ${i % 2 === 0 ? 'border-r border-line' : 'sm:border-r sm:border-line'} ${i < 2 ? 'border-b border-line sm:border-b-0' : ''} last:border-r-0`}>
+            <p className="text-[12px] font-medium text-mute">{label}</p>
+            <p className="mt-2.5 flex items-baseline gap-2 text-[1.9rem] font-semibold leading-none tracking-tightest">
               <Count value={value} />
+              {of ? <span className="font-mono text-[11px] font-normal tracking-normal text-mute">{Math.round((value / (of || 1)) * 100)}%</span> : null}
             </p>
-          </Surface>
+          </div>
         ))}
-      </section>
+      </Surface>
 
       <section className="grid gap-3 xl:grid-cols-2">
         <Surface className="p-5">
@@ -136,7 +137,7 @@ export default function ReviewBooster() {
               </div>
             ) : null}
             {stars > 0 && stars <= 3 ? (
-              <div className="border border-ember/30 bg-[#f8ece4] p-3 text-[13px]">
+              <div className="border border-ember/30 bg-emberSoft p-3 text-[13px]">
                 <p className="flex items-center gap-2 font-medium">
                   <ShieldAlert size={15} className="text-ember" /> We’ll fix this privately.
                 </p>

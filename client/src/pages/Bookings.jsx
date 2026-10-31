@@ -6,6 +6,7 @@ import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
 import { gsap } from '../lib/motion';
 import { trackAction } from '../lib/track';
+import { Avatar } from '../components/Brand';
 import { Badge, Btn, Field, PageShell, Segmented, Select, Surface, inputCls, useShake } from '../components/ui';
 
 const statusTone = {
@@ -140,7 +141,7 @@ export default function Bookings() {
         </Btn>
       }
     >
-      <div className="grid gap-3 xl:grid-cols-[1.25fr_0.75fr]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Surface className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
             <h2 className="text-[14px] font-semibold">Appointments</h2>
@@ -157,7 +158,7 @@ export default function Bookings() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-[13px]">
               <thead>
-                <tr className="border-b border-line bg-canvas/60 text-[11px] uppercase tracking-[0.08em] text-mute">
+                <tr className="border-b border-line bg-canvas/60 font-mono text-[10px] uppercase tracking-[0.08em] text-mute">
                   <th className="px-5 py-2.5 font-medium">When</th>
                   <th className="px-3 py-2.5 font-medium">Customer</th>
                   <th className="px-3 py-2.5 font-medium">Service</th>
@@ -177,12 +178,29 @@ export default function Bookings() {
                   sorted.map((job) => (
                     <tr key={job.id} className="border-b border-line transition last:border-0 hover:bg-canvas/50">
                       <td className="px-5 py-3.5 align-top">
-                        <p className="font-medium">{formatWhen(job.start)}</p>
-                        <p className="text-[12px] text-mute">{job.duration} min</p>
+                        <div className="flex items-center gap-3" title={formatWhen(job.start)}>
+                          <span className="grid w-10 shrink-0 overflow-hidden rounded-[8px] border border-line text-center">
+                            <span className="bg-ink/[0.04] py-px font-mono text-[9px] uppercase tracking-wide text-mute">
+                              {new Date(job.start).toLocaleDateString('en-US', { weekday: 'short' })}
+                            </span>
+                            <span className="tabular py-0.5 text-[15px] font-semibold leading-tight">{new Date(job.start).getDate()}</span>
+                          </span>
+                          <div>
+                            <p className="whitespace-nowrap font-medium">
+                              {new Date(job.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                            <p className="text-[12px] text-mute">{job.duration} min</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 align-top">
-                        <p className="font-medium">{job.customer}</p>
-                        <p className="text-[12px] text-mute">{job.source}</p>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={job.customer} size={28} />
+                          <div className="min-w-0">
+                            <p className="whitespace-nowrap font-medium">{job.customer}</p>
+                            <p className="whitespace-nowrap text-[12px] text-mute">{job.source}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 align-top">{job.service}</td>
                       <td className="px-3 py-3.5 text-right align-top tabular-nums">
@@ -230,7 +248,7 @@ export default function Bookings() {
             </ul>
           </Surface>
           <Surface className="bg-ink p-5 text-paper">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">On the call</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">On the call</p>
             <p className="mt-2 font-display text-[1.55rem] leading-snug">One recovered no-show pays for the month.</p>
             <p className="mt-2 text-[13px] text-white/55">
               Average ticket at {b.name} is {formatMoney(state.metrics.avgTicket, b.currency)}. PulseLocal is $79/mo.
@@ -241,11 +259,11 @@ export default function Bookings() {
 
       {widgetOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-end">
-          <button ref={scrim} className="absolute inset-0 bg-[#17150F]/45" onClick={() => setWidgetOpen(false)} aria-label="Close booking page" />
+          <button ref={scrim} className="absolute inset-0 bg-ink/45" onClick={() => setWidgetOpen(false)} aria-label="Close booking page" />
           <div ref={drawer} className="relative flex h-full w-full max-w-md flex-col bg-canvas">
-            <div className="flex items-center justify-between bg-pine px-5 py-4 text-[#f4efe4]">
+            <div className="flex items-center justify-between bg-pine px-5 py-4 text-white">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#d7e8c8]">Book · {b.city}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Book · {b.city}</p>
                 <p className="font-display text-[1.35rem]">{b.name}</p>
               </div>
               <button onClick={() => setWidgetOpen(false)} className="p-1 hover:bg-white/10">

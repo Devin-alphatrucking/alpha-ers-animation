@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react';
 import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
 import { Btn, Field, inputCls, useShake } from '../components/ui';
+import { Logo } from '../components/Brand';
 
 export default function Login() {
   const { owner, login } = useDemo();
@@ -53,18 +54,15 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#132822] px-4">
-      <div ref={card} className="w-full max-w-[380px]">
-        <div className="mb-6 flex items-center gap-2.5 text-[#f4efe4]">
-          <span className="grid h-8 w-8 place-items-center rounded-[6px] bg-ember font-display text-[16px] text-white">P</span>
-          <div className="leading-none">
-            <p className="font-display text-[1.15rem]">PulseLocal</p>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.18em] text-white/45">Owner area</p>
-          </div>
+    <div className="relative flex min-h-[100dvh] items-center justify-center bg-canvas px-4">
+      <div className="dot-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black,transparent_65%)]" />
+      <div ref={card} className="relative w-full max-w-[380px]">
+        <div className="mb-6">
+          <Logo sub="Owner area" />
         </div>
-        <form ref={shaker.ref} onSubmit={submit} noValidate className="rounded-[10px] border border-line bg-paper p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+        <form ref={shaker.ref} onSubmit={submit} noValidate className="rounded-[14px] border border-line bg-paper p-6 shadow-lift">
           <div className="mb-5 flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-[6px] bg-canvas text-pine">
+            <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-ink/[0.05] text-ink">
               <Lock size={16} />
             </span>
             <div>

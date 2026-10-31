@@ -1,6 +1,6 @@
 export const STAGES = [
   { id: 'new', label: 'New', hint: 'Researched, not contacted', dot: 'bg-mute/50' },
-  { id: 'contacted', label: 'Contacted', hint: 'DM or email sent', dot: 'bg-[#B98A2E]' },
+  { id: 'contacted', label: 'Contacted', hint: 'DM or email sent', dot: 'bg-gold' },
   { id: 'replied', label: 'Replied', hint: 'They wrote back', dot: 'bg-pineBright' },
   { id: 'demo', label: 'Demo booked', hint: 'Call or Loom scheduled', dot: 'bg-ember' },
   { id: 'won', label: 'Won', hint: 'Paying customer', dot: 'bg-moss' },

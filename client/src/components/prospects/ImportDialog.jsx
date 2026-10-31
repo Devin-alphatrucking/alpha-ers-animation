@@ -163,7 +163,7 @@ export default function ImportDialog({ open, onClose }) {
                 </li>
               ))}
               {preview.skipped.map((s) => (
-                <li key={`s${s.line}`} className="flex items-start gap-3 bg-[#fbf1ea] px-3 py-2 text-[13px]">
+                <li key={`s${s.line}`} className="flex items-start gap-3 bg-emberSoft px-3 py-2 text-[13px]">
                   <XCircle size={14} className="mt-0.5 shrink-0 text-ember" />
                   <div className="min-w-0">
                     <p className="truncate font-medium text-ink">

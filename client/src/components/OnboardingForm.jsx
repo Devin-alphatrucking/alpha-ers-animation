@@ -71,7 +71,7 @@ export default function OnboardingForm({ offer, initialPlan = '', business, subm
 
   if (done) {
     return (
-      <div className="rounded-[8px] border border-[#cfe0d3] bg-[#eef5ef] p-5">
+      <div className="rounded-[8px] border border-pine/20 bg-pineSoft p-5">
         <CheckCircle2 size={22} className="text-moss" />
         <p className="mt-3 font-display text-[1.35rem] leading-tight text-ink">Got it, {f.contactName.split(' ')[0]}.</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-mute">

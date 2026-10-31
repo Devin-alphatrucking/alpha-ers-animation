@@ -4,6 +4,7 @@ import { useDemo } from '../context/DemoContext';
 import { trackPage } from '../lib/track';
 import Sidebar, { groups } from './Sidebar';
 import TopBar from './TopBar';
+import CommandPalette from './CommandPalette';
 import { Toast } from './ui';
 
 function MobileNav() {
@@ -12,7 +13,7 @@ function MobileNav() {
   const links = groups.filter((g) => owner || !g.ownerOnly).flatMap((g) => g.links);
 
   return (
-    <nav className="flex shrink-0 overflow-x-auto border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="flex shrink-0 overflow-x-auto border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       {links.map((l) => (
         <NavLink
           key={l.to}
@@ -20,14 +21,14 @@ function MobileNav() {
           end={l.to === '/'}
           className={({ isActive }) =>
             `relative flex min-w-[64px] flex-1 flex-col items-center gap-1 px-2 py-2 text-[10px] font-medium transition ${
-              isActive ? 'text-pine' : 'text-mute'
+              isActive ? 'text-ink' : 'text-mute'
             }`
           }
         >
           {({ isActive }) => (
             <>
               {isActive ? <span className="absolute top-0 h-[2px] w-8 rounded-b bg-ember" /> : null}
-              <l.icon size={18} strokeWidth={1.75} />
+              <l.icon size={18} strokeWidth={isActive ? 2 : 1.75} className={isActive ? 'text-ember' : ''} />
               <span className="whitespace-nowrap">{l.label}</span>
               {l.badge === 'unread' && unread > 0 ? (
                 <span className="absolute right-[calc(50%-18px)] top-1.5 h-2 w-2 rounded-full bg-ember" />
@@ -66,6 +67,7 @@ export default function Layout() {
         <MobileNav />
       </div>
       <Toast toast={toast} />
+      <CommandPalette />
     </div>
   );
 }
