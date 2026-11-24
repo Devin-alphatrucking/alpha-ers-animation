@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useGSAP } from '@gsap/react';
 import { Check, ChevronDown, CircleAlert, X } from 'lucide-react';
 import { gsap, reveal, shake } from '../lib/motion';
@@ -70,24 +71,55 @@ export function Select({ value, onChange, options, error, className = '', align 
   const [active, setActive] = useState(0);
   const wrap = useRef(null);
   const list = useRef(null);
+  const [pos, setPos] = useState(null);
   const selected = options.find((o) => o.value === value);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const r = wrap.current?.getBoundingClientRect();
+      if (!r) return;
+      const below = window.innerHeight - r.bottom;
+      const up = below < 280 && r.top > below;
+      setPos({
+        minWidth: r.width,
+        ...(align === 'right' ? { right: window.innerWidth - r.right } : { left: r.left }),
+        ...(up ? { bottom: window.innerHeight - r.top + 6 } : { top: r.bottom + 6 })
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return undefined;
     setActive(Math.max(0, options.findIndex((o) => o.value === value)));
     const onDoc = (e) => {
-      if (wrap.current && !wrap.current.contains(e.target)) setOpen(false);
+      if (wrap.current?.contains(e.target) || list.current?.contains(e.target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
-    if (list.current) {
-      gsap.fromTo(
-        list.current,
-        { opacity: 0, y: -4, scale: 0.98 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.18, ease: 'power2.out', transformOrigin: 'top center' }
-      );
-    }
     return () => document.removeEventListener('mousedown', onDoc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const shown = open && Boolean(pos);
+  useEffect(() => {
+    if (!shown || !list.current) return;
+    gsap.fromTo(
+      list.current,
+      { opacity: 0, y: -4, scale: 0.98 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.18, ease: 'power2.out', transformOrigin: 'top center' }
+    );
+  }, [shown]);
+
+  useEffect(() => {
+    if (!open) setPos(null);
   }, [open]);
 
   function choose(o) {
@@ -140,14 +172,12 @@ export function Select({ value, onChange, options, error, className = '', align 
         </span>
         <ChevronDown size={15} className={cx('shrink-0 text-mute transition-transform duration-200', open && 'rotate-180')} />
       </button>
-      {open ? (
+      {open && pos ? createPortal(
         <ul
           ref={list}
           role="listbox"
-          className={cx(
-            'absolute z-[60] mt-1.5 max-h-64 min-w-full overflow-auto rounded-[10px] border border-line bg-paper p-1 shadow-pop scrollbar-thin',
-            align === 'right' ? 'right-0' : 'left-0'
-          )}
+          style={pos}
+          className="fixed z-[60] max-h-64 overflow-auto rounded-[10px] border border-line bg-paper p-1 shadow-pop scrollbar-thin"
         >
           {options.map((o, i) => {
             const on = o.value === value;
@@ -175,7 +205,8 @@ export function Select({ value, onChange, options, error, className = '', align 
               </li>
             );
           })}
-        </ul>
+        </ul>,
+        document.body
       ) : null}
     </div>
   );
