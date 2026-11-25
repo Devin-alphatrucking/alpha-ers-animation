@@ -148,7 +148,7 @@ export default function Pricing() {
       </section>
 
       {plans.setup ? (
-        <Surface className="mt-3 grid gap-5 bg-ink p-6 text-paper md:grid-cols-[1fr_auto] md:items-center">
+        <Surface data-tour="setup" className="mt-3 grid gap-5 bg-ink p-6 text-paper md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Done for you</p>
             <h2 className="mt-1 font-display text-[1.5rem] text-paper">
@@ -166,7 +166,7 @@ export default function Pricing() {
       ) : null}
 
       <section className="mt-3 grid gap-3 lg:grid-cols-12">
-        <Surface className="p-6 lg:col-span-7">
+        <Surface data-tour="after-pay" className="p-6 lg:col-span-7">
           <h2 className="font-display text-[1.35rem]">What happens after you pay</h2>
           <ol className="mt-5 space-y-4">
             {[

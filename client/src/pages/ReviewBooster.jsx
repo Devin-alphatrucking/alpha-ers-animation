@@ -5,6 +5,7 @@ import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
 import { trackAction } from '../lib/track';
 import { Btn, Count, Field, PageShell, Surface, inputCls, useShake } from '../components/ui';
+import { sleep, useTourActions } from '../components/Tour';
 
 function Stars({ value, onChange, size = 28 }) {
   return (
@@ -67,6 +68,34 @@ export default function ReviewBooster() {
     }
   }
 
+  async function demoReview(n, who, complaint) {
+    setResult(null);
+    setErrors({});
+    setText('');
+    setCustomer(who);
+    setStars(0);
+    for (let i = 1; i <= n; i += 1) {
+      await sleep(180);
+      setStars(i);
+    }
+    await sleep(500);
+    if (complaint) {
+      for (let i = 1; i <= complaint.length; i += 1) {
+        setText(complaint.slice(0, i));
+        await sleep(22);
+      }
+    } else {
+      setText(suggestions[0]);
+    }
+    await sleep(500);
+    shake.ref.current?.requestSubmit();
+  }
+
+  useTourActions({
+    'rate-5': () => demoReview(5, 'Taylor Brooks'),
+    'rate-2': () => demoReview(2, 'Mark Davis', 'Waited 25 minutes past my appointment time.')
+  });
+
   async function blast() {
     const next = await api.requestReview('last 7 completed visits');
     setState(next);
@@ -89,7 +118,7 @@ export default function ReviewBooster() {
         </Btn>
       }
     >
-      <Surface className="mb-3 grid grid-cols-2 overflow-hidden sm:grid-cols-4">
+      <Surface data-tour="review-stats" className="mb-3 grid grid-cols-2 overflow-hidden sm:grid-cols-4">
         {[
           ['Requests sent', c.sent, null],
           ['Opened', c.opened, c.sent],
@@ -186,7 +215,7 @@ export default function ReviewBooster() {
         </Surface>
 
         <div className="space-y-3">
-          <Surface className="flex items-center gap-4 p-5">
+          <Surface data-tour="qr" className="flex items-center gap-4 p-5">
             <img src={qrUrl} alt="Front desk review QR" className="h-[112px] w-[112px] border border-line bg-paper" />
             <div>
               <h3 className="font-display text-[1.3rem]">Front-desk QR</h3>
@@ -195,7 +224,7 @@ export default function ReviewBooster() {
               </p>
             </div>
           </Surface>
-          <Surface className="p-5">
+          <Surface data-tour="shield" className="p-5">
             <h3 className="font-display text-[1.3rem]">Negative shield</h3>
             <ul className="mt-3 space-y-3">
               {privateFlags.length === 0 ? (

@@ -8,6 +8,7 @@ import * as v from '../lib/validate';
 import { popIn } from '../lib/motion';
 import { trackAction } from '../lib/track';
 import { Avatar } from '../components/Brand';
+import { sleep, useTourActions } from '../components/Tour';
 import { Btn, PageShell, Segmented, Surface, inputCls, useShake } from '../components/ui';
 
 const channelMeta = {
@@ -147,6 +148,7 @@ export default function InboxSimulator() {
   const simRef = useRef(null);
   const simScroll = useRef(null);
   const lastSimulate = useRef(null);
+  const autoTyping = useRef(false);
 
   const visible = useMemo(
     () => (filter === 'all' ? leads : leads.filter((l) => l.channel === filter)),
@@ -217,9 +219,35 @@ export default function InboxSimulator() {
       showToast(err, 'error');
       return;
     }
+    await sendText(simInput.trim());
+  }
+
+  async function typeAndSend(text) {
+    if (autoTyping.current) return;
+    autoTyping.current = true;
+    try {
+      for (let i = 1; i <= text.length; i += 1) {
+        setSimInput(text.slice(0, i));
+        await sleep(32);
+      }
+      await sleep(250);
+      await sendText(text);
+    } finally {
+      autoTyping.current = false;
+    }
+  }
+
+  useTourActions({
+    missed: runMissedCall,
+    instagram: runInstagram,
+    'ask-price': () => typeAndSend('Hi! How much is it?'),
+    'book-it': () => typeAndSend('Yes book it please')
+  });
+
+  async function sendText(text) {
     setBusy(true);
     try {
-      const { state: next, reply } = await api.chat(simInput.trim(), simMode);
+      const { state: next, reply } = await api.chat(text, simMode);
       setState(next);
       trackAction('chat');
       if (typeof reply === 'string' && reply.startsWith('Booked')) trackAction('booking');
@@ -271,15 +299,17 @@ export default function InboxSimulator() {
         <Surface data-tour="inbox" className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="text-[14px] font-semibold tracking-[-0.01em]">Conversations</h2>
-            <Segmented
-              value={filter}
-              onChange={setFilter}
-              options={['all', 'sms', 'instagram', 'web', 'google'].map((key) => ({
-                value: key,
-                label: key === 'all' ? 'All' : channelMeta[key].label,
-                count: key === 'all' ? leads.length : leads.filter((l) => l.channel === key).length
-              }))}
-            />
+            <div data-tour="channels">
+              <Segmented
+                value={filter}
+                onChange={setFilter}
+                options={['all', 'sms', 'instagram', 'web', 'google'].map((key) => ({
+                  value: key,
+                  label: key === 'all' ? 'All' : channelMeta[key].label,
+                  count: key === 'all' ? leads.length : leads.filter((l) => l.channel === key).length
+                }))}
+              />
+            </div>
           </div>
           <div className="grid min-h-[560px] md:grid-cols-[232px_minmax(0,1fr)]">
             <ul className="max-h-[560px] overflow-y-auto border-r border-line p-1.5 scrollbar-thin">
@@ -317,7 +347,7 @@ export default function InboxSimulator() {
               })}
             </ul>
 
-            <div className="flex min-h-[560px] flex-col">
+            <div data-tour="thread" className="flex min-h-[560px] flex-col">
               {active ? (
                 <>
                   <div className="flex items-center gap-3 border-b border-line px-4 py-3">

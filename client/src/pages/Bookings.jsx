@@ -7,6 +7,7 @@ import * as v from '../lib/validate';
 import { gsap } from '../lib/motion';
 import { trackAction } from '../lib/track';
 import { Avatar } from '../components/Brand';
+import { sleep, useTourActions } from '../components/Tour';
 import { Badge, Btn, Field, PageShell, Segmented, Select, Surface, inputCls, useShake } from '../components/ui';
 
 const statusTone = {
@@ -128,6 +129,33 @@ export default function Bookings() {
     }
   }
 
+  async function demoBook() {
+    setWidgetOpen(true);
+    await sleep(500);
+    const name = 'Jamie Lee';
+    const tel = '+1 214 555 0142';
+    for (let i = 1; i <= name.length; i += 1) {
+      setCustomer(name.slice(0, i));
+      await sleep(40);
+    }
+    for (let i = 1; i <= tel.length; i += 1) {
+      setPhone(tel.slice(0, i));
+      await sleep(28);
+    }
+    await sleep(300);
+    formShake.ref.current?.requestSubmit();
+  }
+
+  useTourActions({
+    'open-booking-page': () => setWidgetOpen(true),
+    'close-booking-page': () => setWidgetOpen(false),
+    'demo-book': demoBook,
+    'complete-first': () => {
+      const job = sorted.find((x) => x.status !== 'completed');
+      if (job) complete(job.id);
+    }
+  });
+
   const selected = b.services.find((s) => s.id === serviceId) || b.services[0];
 
   return (
@@ -136,7 +164,7 @@ export default function Bookings() {
       title="Bookings"
       subtitle={`Deposits, reminders, and one-click review requests for ${b.name}.`}
       actions={
-        <Btn variant="primary" onClick={() => setWidgetOpen(true)}>
+        <Btn data-tour="booking-page" variant="primary" onClick={() => setWidgetOpen(true)}>
           Preview booking page
         </Btn>
       }
@@ -237,7 +265,7 @@ export default function Bookings() {
         </Surface>
 
         <div className="space-y-3">
-          <Surface className="p-5">
+          <Surface data-tour="reminders" className="p-5">
             <p className="flex items-center gap-2 text-[13px] font-semibold">
               <Clock size={15} className="text-pine" /> Reminders
             </p>
@@ -260,7 +288,7 @@ export default function Bookings() {
       {widgetOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-end">
           <button ref={scrim} className="absolute inset-0 bg-ink/45" onClick={() => setWidgetOpen(false)} aria-label="Close booking page" />
-          <div ref={drawer} className="relative flex h-full w-full max-w-md flex-col bg-canvas">
+          <div ref={drawer} data-tour="booking-widget" className="relative flex h-full w-full max-w-md flex-col bg-canvas">
             <div className="flex items-center justify-between bg-pine px-5 py-4 text-white">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Book · {b.city}</p>

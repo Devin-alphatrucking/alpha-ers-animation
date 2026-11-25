@@ -121,7 +121,16 @@ One always-on free service fits inside Render's 750 free hours a month.
 
 ## Guided tours
 
-- **Demo tour (prospects):** starts by itself the first time a prospect opens their demo link. It walks through the numbers, live desk, ROI calculator, inbox, a missed-call test on the phone, bookings, reviews and plans. When they finish, "finished the guided tour" shows up in their pipeline timeline.
+- **Demo tour (prospects):** starts by itself the first time a prospect opens their demo link. It has 7 use-case chapters (about 3 minutes), and the opening card lets them jump straight to any chapter:
+  1. **Your results:** KPIs, recovered revenue, live desk, ROI calculator, funnel.
+  2. **Missed call → text back:** a live missed call on the phone, then the inbox thread.
+  3. **Price question → booking:** types "How much is it?" and "Yes book it please" as the customer.
+  4. **Instagram DMs:** a live IG DM, then the channel filter.
+  5. **Bookings & no-shows:** calendar, reminders, a test booking through the public booking page, then completing a visit to send the review request.
+  6. **Google reviews:** request stats, a 5★ client sent to Google, a 2★ client caught by the shield, the private feedback list and the counter QR code.
+  7. **Plans:** pricing, setup options and what happens after payment.
+
+  Steps with a **Show me** button run the use case live in the demo, and **Again** replays it. When the prospect finishes, "finished the guided tour" shows up in their pipeline timeline.
 - **Owner tour (you):** covers Lead finder, Pipeline, Pitch kit, Ctrl/⌘ K and your offer settings.
 - Restart either one from **Take the tour / Owner tour** in the sidebar, or from Ctrl/⌘ K. Keys: → next, ← back, Esc close.
 - Each tour auto-starts only once per browser. To see the auto-start again, clear `pl_tour_seen_demo` from the browser's local storage.

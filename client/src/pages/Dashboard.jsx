@@ -138,7 +138,7 @@ export default function Dashboard() {
           ))}
         </Surface>
 
-        <Surface className="p-5 lg:col-span-8">
+        <Surface data-tour="revenue-chart" className="p-5 lg:col-span-8">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[12px] font-medium text-mute">Last 7 days</p>
@@ -262,7 +262,7 @@ export default function Dashboard() {
           </div>
         </Surface>
 
-        <Surface className="p-5 lg:col-span-12">
+        <Surface data-tour="funnel" className="p-5 lg:col-span-12">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-[14px] font-semibold tracking-[-0.01em] text-ink">Lead funnel</p>
