@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clapperboard, CornerDownLeft, Link2, PhoneMissed, RotateCcw, Search, Sparkles } from 'lucide-react';
+import { Clapperboard, Compass, CornerDownLeft, Link2, PhoneMissed, RotateCcw, Search, Sparkles } from 'lucide-react';
 import { api } from '../api';
 import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
 import { groups } from './Sidebar';
+import { startTour } from './Tour';
 
 const EVENT = 'pl:open-palette';
 
@@ -55,6 +56,8 @@ export default function CommandPalette() {
     const actions = [
       { id: 'missed', group: 'Actions', label: 'Simulate a missed call', icon: PhoneMissed, run: () => navigate('/inbox', { state: { simulate: Date.now() } }) },
       { id: 'plans', group: 'Actions', label: `See plans for ${b.name}`, icon: Sparkles, run: () => navigate('/pricing') },
+      { id: 'tour-demo', group: 'Actions', label: owner ? 'Take the demo tour (what prospects see)' : 'Take the guided tour', icon: Compass, run: () => startTour('demo') },
+      owner && { id: 'tour-owner', group: 'Actions', label: 'Take the owner tour', icon: Compass, run: () => startTour('owner') },
       owner && { id: 'present', group: 'Actions', label: `Record a pitch video for ${b.name}`, icon: Clapperboard, run: () => navigate('/present') },
       owner && {
         id: 'copy',

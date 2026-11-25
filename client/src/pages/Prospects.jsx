@@ -345,7 +345,7 @@ export default function Prospects() {
         </div>
       </div>
 
-      <div ref={listRef} data-reveal>
+      <div ref={listRef} data-reveal data-tour="pipeline">
         {prospects.length === 0 ? (
           <Surface reveal={false} className="grid place-items-center px-6 py-16 text-center">
             <p className="font-display text-[1.4rem] text-ink">Your pipeline is empty</p>

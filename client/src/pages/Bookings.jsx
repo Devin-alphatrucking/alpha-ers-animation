@@ -142,7 +142,7 @@ export default function Bookings() {
       }
     >
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <Surface className="overflow-hidden">
+        <Surface data-tour="bookings" className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
             <h2 className="text-[14px] font-semibold">Appointments</h2>
             <Segmented

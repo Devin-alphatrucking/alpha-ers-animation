@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   BadgeDollarSign,
   CalendarCheck,
+  Compass,
   Inbox,
   KanbanSquare,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import { formatMoney } from '../api';
 import { isDue, isHot } from '../lib/prospects';
 import { Avatar, Logo } from './Brand';
 import { openPalette } from './CommandPalette';
+import { startTour } from './Tour';
 
 export const groups = [
   {
@@ -80,6 +82,7 @@ export default function Sidebar() {
 
         <button
           type="button"
+          data-tour="search"
           onClick={openPalette}
           className="mt-2 flex h-9 w-full items-center gap-2 rounded-[8px] px-2.5 text-[13px] text-mute transition hover:bg-ink/[0.04] hover:text-ink"
         >
@@ -89,6 +92,15 @@ export default function Sidebar() {
             <kbd className="kbd">{isMac ? '⌘' : 'Ctrl'}</kbd>
             <kbd className="kbd">K</kbd>
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => startTour(owner ? 'owner' : 'demo')}
+          className="flex h-9 w-full items-center gap-2 rounded-[8px] px-2.5 text-[13px] text-mute transition hover:bg-ink/[0.04] hover:text-ink"
+        >
+          <Compass size={15} strokeWidth={1.75} />
+          <span className="flex-1 text-left">{owner ? 'Owner tour' : 'Take the tour'}</span>
+          <span className="rounded-[5px] bg-emberSoft px-1.5 font-mono text-[10px] font-medium leading-[17px] text-emberDeep">1 min</span>
         </button>
       </div>
 
@@ -142,6 +154,7 @@ export default function Sidebar() {
       {owner ? (
         <Link
           to="/settings"
+          data-tour="offer"
           className="group m-3 block rounded-[12px] border border-line bg-paper p-3.5 shadow-card transition hover:shadow-lift"
         >
           <div className="flex items-center justify-between">

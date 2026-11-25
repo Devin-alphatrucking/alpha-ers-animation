@@ -107,7 +107,7 @@ export default function ReviewBooster() {
       </Surface>
 
       <section className="grid gap-3 xl:grid-cols-2">
-        <Surface className="p-5">
+        <Surface data-tour="review-funnel" className="p-5">
           <h2 className="font-display text-[1.35rem]">Customer funnel</h2>
           <p className="mb-4 text-[12px] text-mute">4–5★ goes to Google. 1–3★ opens the shield.</p>
           <form ref={shake.ref} onSubmit={submit} className="space-y-4">

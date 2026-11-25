@@ -268,7 +268,7 @@ export default function InboxSimulator() {
       }
     >
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_370px]">
-        <Surface className="overflow-hidden">
+        <Surface data-tour="inbox" className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="text-[14px] font-semibold tracking-[-0.01em]">Conversations</h2>
             <Segmented
@@ -370,7 +370,7 @@ export default function InboxSimulator() {
           </div>
         </Surface>
 
-        <Surface className="relative overflow-hidden p-5">
+        <Surface data-tour="phone" className="relative overflow-hidden p-5">
           <div className="dot-grid pointer-events-none absolute inset-0 opacity-70" />
           <div className="relative">
             <div className="mb-5 flex items-start justify-between gap-3">

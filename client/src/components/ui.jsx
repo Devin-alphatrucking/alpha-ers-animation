@@ -177,7 +177,7 @@ export function Select({ value, onChange, options, error, className = '', align 
           ref={list}
           role="listbox"
           style={pos}
-          className="fixed z-[60] max-h-64 overflow-auto rounded-[10px] border border-line bg-paper p-1 shadow-pop scrollbar-thin"
+          className="fixed z-[66] max-h-64 overflow-auto rounded-[10px] border border-line bg-paper p-1 shadow-pop scrollbar-thin"
         >
           {options.map((o, i) => {
             const on = o.value === value;
@@ -276,9 +276,9 @@ export function PageShell({ kicker, title, subtitle, actions, children }) {
   );
 }
 
-export function Surface({ className = '', reveal: doReveal = true, children }) {
+export function Surface({ className = '', reveal: doReveal = true, children, ...rest }) {
   return (
-    <div data-reveal={doReveal ? '' : undefined} className={cx('rounded-[12px] border border-line shadow-card', /\bbg-/.test(className) ? '' : 'bg-paper', className)}>
+    <div {...rest} data-reveal={doReveal ? '' : undefined} className={cx('rounded-[12px] border border-line shadow-card', /\bbg-/.test(className) ? '' : 'bg-paper', className)}>
       {children}
     </div>
   );

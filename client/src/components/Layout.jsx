@@ -5,6 +5,7 @@ import { trackPage } from '../lib/track';
 import Sidebar, { groups } from './Sidebar';
 import TopBar from './TopBar';
 import CommandPalette from './CommandPalette';
+import Tour from './Tour';
 import { Toast } from './ui';
 
 function MobileNav() {
@@ -68,6 +69,7 @@ export default function Layout() {
       </div>
       <Toast toast={toast} />
       <CommandPalette />
+      <Tour />
     </div>
   );
 }

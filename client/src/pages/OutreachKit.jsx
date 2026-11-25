@@ -188,7 +188,7 @@ export default function OutreachKit() {
       title="Pitch kit"
       subtitle={`Scripts filled with ${b.name}, ${b.city}, and a live demo link.`}
     >
-      <Surface className="mb-3 flex flex-wrap items-center gap-3 px-5 py-3.5">
+      <Surface data-tour="pitch-picker" className="mb-3 flex flex-wrap items-center gap-3 px-5 py-3.5">
         <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">Pitching</span>
         <div className="w-72">
           <Select
@@ -215,7 +215,7 @@ export default function OutreachKit() {
       </Surface>
 
       <section className="grid gap-3 lg:grid-cols-12">
-        <Surface className="bg-ink p-6 text-paper lg:col-span-7">
+        <Surface data-tour="demo-link" className="bg-ink p-6 text-paper lg:col-span-7">
           <div className="flex items-center justify-between gap-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Demo URL</p>
             {pitching ? (

@@ -200,7 +200,7 @@ export default function Leads() {
         </div>
       ) : null}
 
-      <Surface className="mb-4 p-5">
+      <Surface data-tour="lead-search" className="mb-4 p-5">
         <form ref={shaker.ref} onSubmit={runSearch} noValidate className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-[200px_1fr_1fr_1fr_auto]">
           <Field label="Industry" error={errors.nicheId}>
             <Select value={form.nicheId} onChange={set('nicheId')} options={nicheOptions} ariaLabel="Industry" />

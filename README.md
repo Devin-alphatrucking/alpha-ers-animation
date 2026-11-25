@@ -119,6 +119,13 @@ One always-on free service fits inside Render's 750 free hours a month.
 - Optional custom domain (e.g. `demo.yourbrand.com`): Render → your service → Settings → Custom Domains.
 - To run the production setup locally: copy `server/.env.example` to `server/.env`, fill it in, then run `npm run build` and `npm start`.
 
+## Guided tours
+
+- **Demo tour (prospects):** starts by itself the first time a prospect opens their demo link. It walks through the numbers, live desk, ROI calculator, inbox, a missed-call test on the phone, bookings, reviews and plans. When they finish, "finished the guided tour" shows up in their pipeline timeline.
+- **Owner tour (you):** covers Lead finder, Pipeline, Pitch kit, Ctrl/⌘ K and your offer settings.
+- Restart either one from **Take the tour / Owner tour** in the sidebar, or from Ctrl/⌘ K. Keys: → next, ← back, Esc close.
+- Each tour auto-starts only once per browser. To see the auto-start again, clear `pl_tour_seen_demo` from the browser's local storage.
+
 ## Pitch videos (Present mode)
 
 Open **Pitch kit → Record pitch video** (or press Ctrl/⌘ K → "Record a pitch video"). It plays a 40-second walkthrough with the prospect's business name, prices and numbers: missed-call text-back, booking by text, review booster, monthly ROI and a "Reply DEMO" call to action.

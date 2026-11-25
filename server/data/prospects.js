@@ -42,6 +42,7 @@ const ACTION_LABELS = {
   booking: 'made a booking',
   review: 'tried the review funnel',
   roi: 'used the ROI calculator',
+  tour_done: 'finished the guided tour',
   book_call: 'clicked Book a call',
   whatsapp: 'clicked WhatsApp',
   email: 'clicked Email',

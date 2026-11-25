@@ -104,7 +104,7 @@ export default function Dashboard() {
       }
     >
       <section className="grid gap-3 lg:grid-cols-12">
-        <Surface className="grid overflow-hidden sm:grid-cols-2 lg:col-span-12 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <Surface data-tour="kpis" className="grid overflow-hidden sm:grid-cols-2 lg:col-span-12 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div className="relative border-b border-line p-5 sm:col-span-2 lg:col-span-1 lg:border-b-0 lg:border-r">
             <div className="flex items-center justify-between">
               <p className="text-[12px] font-medium text-mute">Revenue recovered</p>
@@ -184,11 +184,11 @@ export default function Dashboard() {
           </div>
         </Surface>
 
-        <Surface className="overflow-hidden lg:col-span-4 lg:row-span-2">
+        <Surface data-tour="live-desk" className="overflow-hidden lg:col-span-4 lg:row-span-2">
           <LiveFeed business={b} seed={activity} names={names} />
         </Surface>
 
-        <Surface className="relative overflow-hidden border-night bg-night p-6 text-white lg:col-span-8">
+        <Surface data-tour="roi" className="relative overflow-hidden border-night bg-night p-6 text-white lg:col-span-8">
           <div className="dot-grid-dark pointer-events-none absolute inset-0" />
           <div className="relative">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -242,7 +242,7 @@ export default function Dashboard() {
               {[
                 ['Extra monthly revenue', formatMoney(roi.extraRevenue, b.currency), true],
                 ['Saved vs Podium / yr', formatMoney(roi.yearly, b.currency)],
-                ['Pays for itself in', `${roi.paybackDays} days`]
+                ['Pays for itself in', `${roi.paybackDays} ${roi.paybackDays === 1 ? 'day' : 'days'}`]
               ].map(([label, value, accent]) => (
                 <div key={label} className="bg-night p-4">
                   <p className="text-[11px] text-white/50">{label}</p>

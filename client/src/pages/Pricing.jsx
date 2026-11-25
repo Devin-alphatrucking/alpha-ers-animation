@@ -115,7 +115,7 @@ export default function Pricing() {
         </Surface>
       ) : null}
 
-      <section className="grid gap-3 lg:grid-cols-3">
+      <section data-tour="plans" className="grid gap-3 lg:grid-cols-3">
         {monthly.map((id) => {
           const p = plans[id];
           const featured = id === 'growth';
