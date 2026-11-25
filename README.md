@@ -119,6 +119,16 @@ One always-on free service fits inside Render's 750 free hours a month.
 - Optional custom domain (e.g. `demo.yourbrand.com`): Render → your service → Settings → Custom Domains.
 - To run the production setup locally: copy `server/.env.example` to `server/.env`, fill it in, then run `npm run build` and `npm start`.
 
+## Pitch videos (Present mode)
+
+Open **Pitch kit → Record pitch video** (or press Ctrl/⌘ K → "Record a pitch video"). It plays a 40-second walkthrough with the prospect's business name, prices and numbers: missed-call text-back, booking by text, review booster, monthly ROI and a "Reply DEMO" call to action.
+
+1. Pick the prospect first (so the demo uses their name), then open Present mode. You can also go straight to `/present?biz=...&niche=...&city=...` using the same parameters as a demo link.
+2. Choose **Reel 9:16** (Instagram Reels/Stories), **Post 1:1** or **Wide 16:9** (email/Loom).
+3. Start your screen recorder on that area, press **H** to hide the controls, then **Space** to play.
+
+Keys: Space play/pause · ← → previous/next scene · R restart · H hide controls · 1/2/3 switch format. Add `&autoplay=1` to start playing on load.
+
 ## What to click on a sales call / Loom
 
 1. Command Center — ROI calculator vs Podium

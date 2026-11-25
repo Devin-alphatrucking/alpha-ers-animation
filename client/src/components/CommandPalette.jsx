@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, Link2, PhoneMissed, RotateCcw, Search, Sparkles } from 'lucide-react';
+import { Clapperboard, CornerDownLeft, Link2, PhoneMissed, RotateCcw, Search, Sparkles } from 'lucide-react';
 import { api } from '../api';
 import { useDemo } from '../context/DemoContext';
 import { gsap } from '../lib/motion';
@@ -55,6 +55,7 @@ export default function CommandPalette() {
     const actions = [
       { id: 'missed', group: 'Actions', label: 'Simulate a missed call', icon: PhoneMissed, run: () => navigate('/inbox', { state: { simulate: Date.now() } }) },
       { id: 'plans', group: 'Actions', label: `See plans for ${b.name}`, icon: Sparkles, run: () => navigate('/pricing') },
+      owner && { id: 'present', group: 'Actions', label: `Record a pitch video for ${b.name}`, icon: Clapperboard, run: () => navigate('/present') },
       owner && {
         id: 'copy',
         group: 'Actions',

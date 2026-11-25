@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Copy, Check, Eye, Mail, Instagram, Video, MessageCircle, Send, KanbanSquare } from 'lucide-react';
+import { Clapperboard, Copy, Check, Eye, Mail, Instagram, Video, MessageCircle, Send, KanbanSquare } from 'lucide-react';
 import { api, formatMoney } from '../api';
 import { useDemo } from '../context/DemoContext';
 import * as v from '../lib/validate';
@@ -226,9 +226,14 @@ export default function OutreachKit() {
             ) : null}
           </div>
           <p className="mt-2 break-all font-mono text-[12px] text-emberTint">{kit.demoLink || demoLink}</p>
-          <Btn variant="primary" className="mt-4" onClick={() => copy('link', kit.demoLink)}>
-            Copy link
-          </Btn>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Btn variant="primary" onClick={() => copy('link', kit.demoLink)}>
+              Copy link
+            </Btn>
+            <Btn as={Link} to="/present" variant="ghost" className="border-white/15 bg-white/10 text-white hover:bg-white/15">
+              <Clapperboard size={14} /> Record pitch video
+            </Btn>
+          </div>
           <p className="mt-3 text-[12px] text-white/45">
             {pitching
               ? 'They see their own shop name, city, and prices. Every open shows up in their pipeline timeline.'

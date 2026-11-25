@@ -13,6 +13,7 @@ import Pricing from './pages/Pricing';
 import Welcome from './pages/Welcome';
 import Settings from './pages/Settings';
 import Leads from './pages/Leads';
+import Present from './pages/Present';
 
 function OwnerOnly({ children }) {
   const { owner } = useDemo();
@@ -55,6 +56,7 @@ export default function App() {
     <Routes>
       <Route path="login" element={<Login />} />
       <Route path="welcome" element={<Welcome />} />
+      <Route path="present" element={<Present />} />
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="pricing" element={<Pricing />} />
